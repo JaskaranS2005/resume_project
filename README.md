@@ -107,7 +107,7 @@ source .venv/bin/activate
 Install Python dependencies:
 
 ```bash
-pip install streamlit pymupdf pytesseract pillow scikit-learn
+pip install -r requirements.txt
 ```
 
 For image resume OCR, install Tesseract on your system:

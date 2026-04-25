@@ -1,0 +1,7 @@
+streamlit
+pymupdf
+pytesseract
+pillow
+scikit-learn
+groq
+python-dotenv
