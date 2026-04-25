@@ -1,12 +1,13 @@
-import fitz  # PyMuPDF
+import PyPDF2
 
 def extract_pdf_text(file_path):
     text = ""
     
     try:
-        doc = fitz.open(file_path)
-        for page in doc:
-            text += page.get_text()
+        with open(file_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            for page in reader.pages:
+                text += page.extract_text() + "\n"
         return text.strip()
     
     except Exception as e:
