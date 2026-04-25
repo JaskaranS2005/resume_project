@@ -38,146 +38,285 @@ if "jd_text" not in st.session_state:
     st.session_state.jd_text = JOB_OPTIONS[st.session_state.selected_role]
 
 
-st.set_page_config(page_title="Resume Matcher", layout="wide")
+st.set_page_config(
+    page_title="Resume Matcher", layout="wide", initial_sidebar_state="expanded"
+)
 
 st.markdown(
     """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 :root {
-    --bg: #faf8f5;
-    --surface: #ffffff;
-    --text: #451a03;
-    --muted: #7c5a35;
-    --border: #e7dfd2;
-    --primary: #b45309;
-    --primary-strong: #9a4708;
+    --bg: #0f172a;            /* Slate 900 */
+    --surface: #1e293b;       /* Slate 800 */
+    --text: #f8fafc;          /* Slate 50 */
+    --muted: #94a3b8;         /* Slate 400 */
+    --border: #334155;        /* Slate 700 */
+    --primary: #6366f1;       /* Indigo 500 */
+    --primary-hover: #818cf8; /* Indigo 400 */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.5);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --radius-md: 12px;
+    --radius-lg: 16px;
 }
 
 [data-testid="stAppViewContainer"] {
-    background: var(--bg);
+    background-color: var(--bg);
+}
+
+/* Hide Streamlit UI Elements */
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+#MainMenu {
+    display: none !important;
+    visibility: hidden !important;
 }
 
 .main .block-container {
-    max-width: 1120px;
-    padding-top: 2rem;
-    padding-bottom: 2.25rem;
+    max-width: 1200px;
+    padding-top: 3rem;
+    padding-bottom: 3rem;
 }
 
-html, body, [class*="css"] {
-    font-family: "IBM Plex Sans", "Helvetica Neue", sans-serif;
+html, body, [class*="css"], .stMarkdown {
+    font-family: 'Inter', sans-serif !important;
 }
 
-h1, h2, h3 {
-    color: var(--text);
-    font-weight: 620;
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
 }
 
 p, label, li, div {
     color: var(--text);
 }
 
+/* Inputs, Textareas, Selectboxes */
 div[data-baseweb="select"] > div,
 .stTextArea textarea,
+.stTextInput input,
 .stFileUploader > section,
 .stFileUploader > div {
     border: 1px solid var(--border) !important;
-    border-radius: 8px !important;
+    border-radius: var(--radius-md) !important;
     background: var(--surface) !important;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease-in-out;
 }
 
 .stTextArea textarea:focus,
+.stTextInput input:focus,
 div[data-baseweb="select"] > div:focus-within {
     border-color: var(--primary) !important;
-    box-shadow: 0 0 0 1px var(--primary) !important;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2) !important;
 }
 
-.stButton > button,
+/* Dropdown Menu Fix */
+div[data-baseweb="popover"] > div,
+ul[role="listbox"],
+[data-baseweb="menu"] {
+    background-color: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-md) !important;
+}
+
+ul[role="listbox"] li {
+    color: var(--text) !important;
+    transition: background-color 0.1s ease;
+}
+
+ul[role="listbox"] li:hover,
+ul[role="listbox"] li[aria-selected="true"] {
+    background-color: rgba(99, 102, 241, 0.15) !important;
+    color: var(--primary) !important;
+}
+
+/* Main Action Buttons (Exclude Secondary/File Uploader Buttons) */
+.stButton > button:not([data-testid="stBaseButton-secondary"]),
 .stFormSubmitButton > button {
-    border-radius: 8px !important;
-    border: 1px solid var(--primary) !important;
-    background: var(--primary) !important;
+    border-radius: var(--radius-md) !important;
+    border: none !important;
+    background: linear-gradient(135deg, var(--primary), #818cf8) !important;
     color: #fff !important;
-    font-weight: 620 !important;
-    height: 42px !important;
-    transition: background-color 0.15s ease;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    padding: 0.5rem 1.5rem !important;
+    min-height: 48px !important;
+    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39) !important;
+    transition: all 0.3s ease !important;
+    transform: translateY(0);
 }
 
-.stButton > button:hover,
+.stButton > button:not([data-testid="stBaseButton-secondary"]):hover,
 .stFormSubmitButton > button:hover {
-    background: var(--primary-strong) !important;
+    background: linear-gradient(135deg, var(--primary-hover), var(--primary)) !important;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.23) !important;
+    transform: translateY(-2px) !important;
+    color: #ffffff !important;
 }
 
+.stButton > button:not([data-testid="stBaseButton-secondary"]):active {
+    transform: translateY(0) !important;
+}
+
+/* File Uploader Button & Secondary Buttons */
+[data-testid="stFileUploader"] button,
+[data-testid="stBaseButton-secondary"] {
+    background: var(--border) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    transition: all 0.2s ease !important;
+    transform: none !important;
+    padding: 0.25rem 0.75rem !important;
+    min-height: auto !important;
+}
+
+[data-testid="stFileUploader"] button:hover,
+[data-testid="stBaseButton-secondary"]:hover {
+    border-color: var(--primary) !important;
+    color: var(--primary) !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Metric Cards */
 .metric-card {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 14px 16px;
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary);
+    border-top-left-radius: var(--radius-lg);
+    border-bottom-left-radius: var(--radius-lg);
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
 }
 
 .metric-label {
     color: var(--muted);
-    font-size: 0.9rem;
-    margin-bottom: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
 }
 
 .metric-value {
-    font-size: 1.65rem;
-    line-height: 1.15;
-    font-weight: 650;
+    font-size: 2.5rem;
+    line-height: 1.2;
+    font-weight: 700;
     color: var(--text);
 }
 
+/* Status Badges */
 .status-box {
-    margin-top: 10px;
-    border-radius: 8px;
-    padding: 10px 12px;
-    font-weight: 520;
-    border: 1px solid var(--border);
+    display: inline-block;
+    border-radius: 9999px; /* Pill shape */
+    padding: 6px 16px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: 1px solid transparent;
+    box-shadow: var(--shadow-sm);
+    text-align: center;
 }
 
 .status-strong {
-    background: #ecfdf5;
-    border-color: #10b981;
-    color: #065f46;
+    background-color: rgba(16, 185, 129, 0.15); /* Soft glowing emerald */
+    border-color: rgba(16, 185, 129, 0.3);
+    color: #34d399;
 }
 
 .status-moderate {
-    background: #fffbeb;
-    border-color: #d97706;
-    color: #92400e;
+    background-color: rgba(245, 158, 11, 0.15); /* Soft glowing amber */
+    border-color: rgba(245, 158, 11, 0.3);
+    color: #fbbf24;
 }
 
 .status-weak {
-    background: #fef2f2;
-    border-color: #dc2626;
-    color: #991b1b;
+    background-color: rgba(239, 68, 68, 0.15); /* Soft glowing red */
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #f87171;
 }
 
+/* Expander */
 [data-testid="stExpander"] {
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--surface);
+    box-shadow: var(--shadow-sm);
+}
+[data-testid="stExpander"] summary {
+    font-weight: 600;
+}
+
+/* Sidebar Styling */
+[data-testid="stSidebar"] {
+    background-color: var(--surface) !important;
+    border-right: 1px solid var(--border) !important;
+}
+
+[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+    padding-top: 2rem !important;
+    padding-left: 1.5rem !important;
+    padding-right: 1.5rem !important;
+}
+
+/* File Uploader Dropzone polish */
+[data-testid="stFileUploadDropzone"] {
+    border: 2px dashed #475569 !important;
+    border-radius: var(--radius-lg) !important;
+    background-color: var(--bg) !important;
+    padding: 2rem !important;
+    transition: all 0.2s ease !important;
+}
+[data-testid="stFileUploadDropzone"]:hover {
+    border-color: var(--primary) !important;
+    background-color: var(--surface) !important;
 }
 </style>
 """,
     unsafe_allow_html=True,
 )
 
-st.title("Resume Matcher")
-st.write("Upload a resume, match it against a role, and review practical feedback.")
+st.title("✨ Resume Matcher")
+st.markdown(
+    "<p style='font-size: 1.1rem; color: #64748b; margin-bottom: 2rem;'>Upload a resume, match it against a role, and review practical AI-powered feedback.</p>",
+    unsafe_allow_html=True,
+)
 
-input_col, details_col = st.columns([1, 1.4], gap="large")
-
-with input_col:
-    uploaded_file = st.file_uploader(
-        "Resume file",
-        type=["pdf", "png", "jpg", "jpeg"],
-        help="Supported formats: PDF, PNG, JPG, JPEG",
-    )
-
-with details_col:
+# Move Inputs to Sidebar for a Professional Dashboard Feel
+with st.sidebar:
+    st.header("🎯 Target Role")
     st.selectbox(
-        "Role template",
+        "Select a template or custom role",
         list(JOB_OPTIONS.keys()),
         key="selected_role",
         on_change=sync_jd_from_role,
@@ -185,18 +324,36 @@ with details_col:
     jd = st.text_area(
         "Job description",
         key="jd_text",
-        height=170,
-        placeholder="Paste the target job description here.",
+        height=300,
+        placeholder="Paste the target job description here...",
+        help="The AI will compare the resume against this description.",
+    )
+    st.markdown("---")
+    st.markdown(
+        "💡 **Tip**: Be as specific as possible in the job description to get the most accurate match score."
     )
 
-submitted = st.button("Analyze Resume", use_container_width=True)
+
+# Main Content Area
+st.subheader("📄 Document Upload")
+uploaded_file = st.file_uploader(
+    "Upload candidate resume",
+    type=["pdf", "png", "jpg", "jpeg"],
+    help="Supported formats: PDF, PNG, JPG, JPEG",
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+submitted = st.button("Run AI Analysis", use_container_width=True)
 
 
 if submitted:
     if uploaded_file is None or not jd.strip():
-        st.warning("Upload a resume and provide a job description before running analysis.")
+        st.warning(
+            "⚠️ Please upload a resume and ensure the job description is provided in the sidebar."
+        )
     else:
-        with st.spinner("Running analysis..."):
+        with st.spinner("🤖 Analyzing resume against job description..."):
             ext = os.path.splitext(uploaded_file.name)[1].lower()
             suffix = ext if ext in {".pdf", ".png", ".jpg", ".jpeg"} else ".pdf"
 
@@ -233,18 +390,21 @@ if submitted:
 
 analysis = st.session_state.get("analysis")
 if analysis:
-    st.divider()
-    st.subheader("Analysis Result")
+    st.markdown("<br><hr>", unsafe_allow_html=True)
+
+    st.markdown("## 📊 Analysis Dashboard")
 
     status_text, status_class = get_match_status(analysis["score"])
 
-    score_col, similarity_col, gap_col = st.columns(3, gap="medium")
+    # Metrics Row
+    score_col, similarity_col, gap_col = st.columns(3, gap="large")
     with score_col:
         st.markdown(
             f"""
 <div class="metric-card">
-  <div class="metric-label">Match score</div>
+  <div class="metric-label">Overall Match</div>
   <div class="metric-value">{analysis["score"]}%</div>
+  <div class="status-box {status_class}" style="margin-top: 16px;">{status_text}</div>
 </div>
 """,
             unsafe_allow_html=True,
@@ -253,7 +413,7 @@ if analysis:
         st.markdown(
             f"""
 <div class="metric-card">
-  <div class="metric-label">Similarity</div>
+  <div class="metric-label">Semantic Similarity</div>
   <div class="metric-value">{analysis["similarity"]:.2f}</div>
 </div>
 """,
@@ -263,50 +423,57 @@ if analysis:
         st.markdown(
             f"""
 <div class="metric-card">
-  <div class="metric-label">Depth gap</div>
+  <div class="metric-label">Depth Gap</div>
   <div class="metric-value">{analysis["depth_gap"]}</div>
 </div>
 """,
             unsafe_allow_html=True,
         )
 
-    st.markdown(
-        f'<div class="status-box {status_class}">{status_text}</div>',
-        unsafe_allow_html=True,
-    )
+    st.markdown("<br>", unsafe_allow_html=True)
 
-    left_col, right_col = st.columns([1, 1.25], gap="large")
+    # Content Row
+    feedback_col, signals_col = st.columns([1.5, 1], gap="large")
 
-    with left_col:
-        st.subheader("Signal Review")
+    with feedback_col:
+        st.markdown("### 🧠 AI Feedback")
+        st.info(
+            "Skill depth meaning: basic/introductory = beginner, learning = improving, advanced = strong.",
+            icon="ℹ️",
+        )
 
-        resume_signals = sorted(set(analysis["resume_signals"]))
-        if resume_signals:
-            st.write("Resume signals detected:")
-            for signal in resume_signals:
-                st.markdown(f"- {signal}")
-        else:
-            st.info("No resume depth signals detected.")
+        with st.container(border=True):
+            if isinstance(analysis["feedback"], str) and analysis["feedback"].startswith(
+                "Error:"
+            ):
+                st.error(analysis["feedback"])
+            else:
+                st.markdown(analysis["feedback"])
 
-        jd_signals = analysis["jd_signals"]
-        if jd_signals:
-            st.write("Job description signals:")
-            for signal in jd_signals:
-                st.markdown(f"- {signal}")
-        else:
-            st.info("No job description signals detected.")
+        with st.expander("🔍 Preview Extracted Resume Text"):
+            if analysis["resume_preview"].strip():
+                st.write(analysis["resume_preview"])
+            else:
+                st.write("No text extracted from the uploaded file.")
 
-    with right_col:
-        st.subheader("AI Feedback")
-        if isinstance(analysis["feedback"], str) and analysis["feedback"].startswith("Error:"):
-            st.warning(analysis["feedback"])
-        else:
-            st.markdown(analysis["feedback"])
+    with signals_col:
+        st.markdown("### 📡 Signal Review")
 
-        st.caption("Skill depth meaning: basic/introductory = beginner, learning = improving, advanced = strong.")
+        with st.container(border=True):
+            st.markdown("#### Resume Signals")
+            resume_signals = sorted(set(analysis["resume_signals"]))
+            if resume_signals:
+                for signal in resume_signals:
+                    st.markdown(f"✅ `{signal}`")
+            else:
+                st.warning("No resume depth signals detected.")
 
-    with st.expander("Preview extracted resume text"):
-        if analysis["resume_preview"].strip():
-            st.write(analysis["resume_preview"])
-        else:
-            st.write("No text extracted from the uploaded file.")
+            st.markdown("<hr style='margin: 1rem 0;'>", unsafe_allow_html=True)
+
+            st.markdown("#### Job Description Signals")
+            jd_signals = analysis["jd_signals"]
+            if jd_signals:
+                for signal in jd_signals:
+                    st.markdown(f"🎯 `{signal}`")
+            else:
+                st.warning("No job description signals detected.")
