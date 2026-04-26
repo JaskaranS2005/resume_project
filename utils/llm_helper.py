@@ -39,21 +39,25 @@ Task:
 def _generate_with_openrouter(prompt):
     api_key = os.getenv("OPENROUTER_API_KEY")
     base_url = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-    model = os.getenv("OPENROUTER_MODEL", "qwen/qwen3.6-plus:free")
+    model = os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-120b:free")
     site_url = os.getenv("OPENROUTER_SITE_URL", "")
     app_name = os.getenv("OPENROUTER_APP_NAME", "")
+    temperature = float(os.getenv("OPENROUTER_TEMPERATURE", "0.3"))
+    max_completion_tokens_raw = os.getenv("OPENROUTER_MAX_COMPLETION_TOKENS", "").strip()
+    reasoning_enabled = os.getenv("OPENROUTER_REASONING_ENABLED", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+    reasoning_effort = os.getenv("OPENROUTER_REASONING_EFFORT", "").strip()
+    fallback_models_raw = os.getenv(
+        "OPENROUTER_FALLBACK_MODELS",
+        "meta-llama/llama-3.1-70b-instruct:free,mistralai/mistral-small-3.2-24b-instruct:free,openai/gpt-oss-20b:free",
+    )
 
     if not api_key:
         return "Error: OPENROUTER_API_KEY is not set. Add it in your .env file."
-
-    payload = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": "You are a career assistant."},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.3,
-    }
 
     headers = {
         "Authorization": f"Bearer {api_key}",
@@ -64,25 +68,71 @@ def _generate_with_openrouter(prompt):
     if app_name:
         headers["X-Title"] = app_name
 
-    request = Request(
-        f"{base_url.rstrip('/')}/chat/completions",
-        data=json.dumps(payload).encode("utf-8"),
-        headers=headers,
-        method="POST",
+    fallback_models = [m.strip() for m in fallback_models_raw.split(",") if m.strip()]
+    candidate_models = []
+    for candidate in [model, *fallback_models]:
+        if candidate and candidate not in candidate_models:
+            candidate_models.append(candidate)
+
+    last_error = "Error: OpenRouter request failed."
+
+    for candidate_model in candidate_models:
+        for use_reasoning in ([True, False] if reasoning_enabled else [False]):
+            payload = {
+                "model": candidate_model,
+                "messages": [
+                    {"role": "system", "content": "You are a career assistant."},
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": temperature,
+            }
+            if max_completion_tokens_raw:
+                payload["max_completion_tokens"] = int(max_completion_tokens_raw)
+            if use_reasoning:
+                reasoning_block = {"enabled": True}
+                if reasoning_effort:
+                    reasoning_block["effort"] = reasoning_effort
+                payload["reasoning"] = reasoning_block
+
+            request = Request(
+                f"{base_url.rstrip('/')}/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers=headers,
+                method="POST",
+            )
+
+            try:
+                with urlopen(request, timeout=60) as response:
+                    response_data = json.loads(response.read().decode("utf-8"))
+                return response_data["choices"][0]["message"]["content"]
+            except HTTPError as e:
+                details = e.read().decode("utf-8", errors="ignore")
+                lower_details = details.lower()
+
+                if e.code == 401 or "invalid api key" in lower_details:
+                    return "Error: OPENROUTER_API_KEY is invalid. Update it in .env."
+
+                no_upstream = e.code == 503 and (
+                    "no healthy upstream" in lower_details or "provider returned error" in lower_details
+                )
+                model_unavailable = e.code in (404, 429, 503)
+                if no_upstream or model_unavailable:
+                    last_error = (
+                        f"Error: OpenRouter model `{candidate_model}` is currently unavailable ({e.code}). {details}"
+                    )
+                    continue
+
+                return f"Error: OpenRouter API request failed ({e.code}). {details}"
+            except URLError as e:
+                return f"Error: Could not connect to OpenRouter API. {e.reason}"
+            except Exception as e:
+                return f"Error: {str(e)}"
+
+    return (
+        f"{last_error} "
+        "Tried fallback models and reasoning-off retries. "
+        "Please try again shortly or switch OPENROUTER_MODEL in .env."
     )
-
-    try:
-        with urlopen(request, timeout=60) as response:
-            response_data = json.loads(response.read().decode("utf-8"))
-
-        return response_data["choices"][0]["message"]["content"]
-    except HTTPError as e:
-        details = e.read().decode("utf-8", errors="ignore")
-        return f"Error: OpenRouter API request failed ({e.code}). {details}"
-    except URLError as e:
-        return f"Error: Could not connect to OpenRouter API. {e.reason}"
-    except Exception as e:
-        return f"Error: {str(e)}"
 
 
 def _generate_with_groq(resume_text, jd, score):
