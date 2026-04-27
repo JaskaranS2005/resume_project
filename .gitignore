@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 .DS_Store
 .ipynb_checkpoints/
+.venv/
+.pytest_cache/
+node_modules/

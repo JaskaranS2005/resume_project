@@ -1,8 +1,8 @@
 streamlit
-pymupdf
 PyPDF2
 pytesseract
 pillow
 scikit-learn
 groq
 python-dotenv
+pytest

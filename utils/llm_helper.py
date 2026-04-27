@@ -1,13 +1,31 @@
 import json
 import os
-from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
-from dotenv import load_dotenv
-import groq
+
+try:
+    from dotenv import load_dotenv
+except ImportError:
+    def load_dotenv():
+        return False
+
 
 load_dotenv()
+
+
+def _safe_int(raw_value, default_value):
+    try:
+        return int(str(raw_value).strip())
+    except (TypeError, ValueError):
+        return default_value
+
+
+def _safe_float(raw_value, default_value):
+    try:
+        return float(str(raw_value).strip())
+    except (TypeError, ValueError):
+        return default_value
 
 
 def _build_prompt(resume_text, jd, score, resume_max_chars=1200, jd_max_chars=1000):
@@ -42,7 +60,7 @@ def _generate_with_openrouter(prompt):
     model = os.getenv("OPENROUTER_MODEL", "openai/gpt-oss-120b:free")
     site_url = os.getenv("OPENROUTER_SITE_URL", "")
     app_name = os.getenv("OPENROUTER_APP_NAME", "")
-    temperature = float(os.getenv("OPENROUTER_TEMPERATURE", "0.3"))
+    temperature = _safe_float(os.getenv("OPENROUTER_TEMPERATURE", "0.3"), 0.3)
     max_completion_tokens_raw = os.getenv("OPENROUTER_MAX_COMPLETION_TOKENS", "").strip()
     reasoning_enabled = os.getenv("OPENROUTER_REASONING_ENABLED", "false").strip().lower() in {
         "1",
@@ -87,7 +105,7 @@ def _generate_with_openrouter(prompt):
                 "temperature": temperature,
             }
             if max_completion_tokens_raw:
-                payload["max_completion_tokens"] = int(max_completion_tokens_raw)
+                payload["max_completion_tokens"] = _safe_int(max_completion_tokens_raw, 1024)
             if use_reasoning:
                 reasoning_block = {"enabled": True}
                 if reasoning_effort:
@@ -141,10 +159,15 @@ def _generate_with_groq(resume_text, jd, score):
         return "Error: GROQ_API_KEY is not set. Add it in your .env file."
 
     try:
+        import groq
+    except ImportError:
+        return "Error: `groq` package is not installed. Run `pip install groq`."
+
+    try:
         client = groq.Groq(api_key=api_key)
         model = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
         prompt = _build_prompt(resume_text, jd, score)
-        
+
         response = client.chat.completions.create(
             messages=[
                 {"role": "system", "content": "You are a career assistant."},
@@ -152,12 +175,11 @@ def _generate_with_groq(resume_text, jd, score):
             ],
             model=model,
             temperature=0.7,
-            max_completion_tokens=int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", "1024"))
+            max_completion_tokens=_safe_int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", "1024"), 1024),
         )
         return response.choices[0].message.content
     except Exception as e:
-        print(f"Groq API Error: {e}")
-        return "AI feedback is currently unavailable due to an API error. Your match score is still valid."
+        return f"Error: Groq API request failed. {str(e)}"
 
 
 def _generate_with_gemini(prompt):

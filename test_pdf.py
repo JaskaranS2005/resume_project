@@ -1,8 +1,6 @@
 from utils.file_extractor import extract_pdf_text
 
-pdf_path = input("Enter PDF path: ")
 
-text = extract_pdf_text(pdf_path)
-
-print("\n--- EXTRACTED TEXT ---\n")
-print(text)  # print first 1000 chars
+def test_extract_pdf_text_missing_file_returns_empty(tmp_path):
+    missing_pdf = tmp_path / "missing.pdf"
+    assert extract_pdf_text(str(missing_pdf)) == ""
