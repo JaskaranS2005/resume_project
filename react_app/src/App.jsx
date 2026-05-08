@@ -1081,7 +1081,7 @@ function App() {
   }
 
   return (
-    <main>
+    <main className="intro-page">
       <section className="hero" id="intro">
         <nav className="site-nav" aria-label="Main navigation">
           <a className="brand" href="#intro">
@@ -1197,6 +1197,19 @@ function App() {
             </p>
           </div>
           <div className="workflow-chart" aria-label="Animated resume matcher workflow">
+            <svg className="workflow-wave" viewBox="0 0 1000 160" aria-hidden="true" preserveAspectRatio="none">
+              <path
+                className="workflow-wave-path"
+                d="M40 86 C130 18 210 18 300 86 S470 154 560 86 S730 18 820 86 S930 154 970 86"
+              />
+              <circle className="workflow-wave-ball" r="12">
+                <animateMotion
+                  dur="5.6s"
+                  repeatCount="indefinite"
+                  path="M40 86 C130 18 210 18 300 86 S470 154 560 86 S730 18 820 86 S930 154 970 86"
+                />
+              </circle>
+            </svg>
             <div className="workflow-flow">
               {[
                 ["01", "Upload resume", "PDF or image file enters the analyzer."],
