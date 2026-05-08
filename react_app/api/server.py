@@ -1,6 +1,9 @@
 import os
 import sys
+import json
 import tempfile
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -19,6 +22,7 @@ except ImportError:
         return False
 
 load_dotenv(PROJECT_ROOT / ".env")
+load_dotenv(PROJECT_ROOT / "react_app" / ".env")
 
 from model.model import compute_final_score
 from preprocessing.preprocessing_pipeline import build_feature_vector
@@ -34,6 +38,41 @@ JOB_OPTIONS = {
 }
 
 SUPPORTED_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg"}
+
+RESOURCE_TOOLS = {
+    "resume-checklist": {
+        "env": "GROQ_RESUME_CHECKLIST_KEY",
+        "title": "Resume checklist",
+        "instruction": (
+            "Create a practical resume checklist from the analysis. Focus on concrete resume edits, "
+            "missing evidence, keyword alignment, metrics, formatting, and what to rewrite first."
+        ),
+    },
+    "skill-gap-map": {
+        "env": "GROQ_SKILL_GAP_MAP_KEY",
+        "title": "Skill gap map",
+        "instruction": (
+            "Map the candidate's gaps into skill groups. Identify what is present, what is weak or missing, "
+            "priority level, and the fastest practice path for each gap."
+        ),
+    },
+    "project-prompts": {
+        "env": "GROQ_PROJECT_PROMPTS_KEY",
+        "title": "Project prompts",
+        "instruction": (
+            "Generate project ideas that prove the missing skills. Each project should include goal, stack, "
+            "features, proof points, and resume bullets the candidate can write after building it."
+        ),
+    },
+    "interview-prep": {
+        "env": "GROQ_INTERVIEW_PREP_KEY",
+        "title": "Interview prep",
+        "instruction": (
+            "Convert the analysis into interview preparation. Include likely questions, strong talking points, "
+            "gap explanations, STAR-style answer outlines, and a short practice plan."
+        ),
+    },
+}
 
 app = FastAPI(title="Resume AI React API")
 
@@ -54,6 +93,119 @@ def get_match_status(score):
     return "Weak match"
 
 
+class ResourceRequest(BaseModel):
+    analysis: dict
+    job_description: str | None = None
+    role_template: str | None = None
+
+
+def call_groq(resource_id, payload):
+    tool = RESOURCE_TOOLS.get(resource_id)
+    if not tool:
+        raise HTTPException(status_code=404, detail="Resource tool not found.")
+
+    api_key = os.getenv(tool["env"], "").strip()
+    if not api_key:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Missing {tool['env']} in .env. Add it locally before running this resource.",
+        )
+
+    analysis = payload.analysis or {}
+    prompt = f"""
+You are powering the "{tool['title']}" page in a resume analysis app.
+
+Task:
+{tool['instruction']}
+
+Use this latest analysis as the only source of truth:
+Role template: {payload.role_template or analysis.get("role_template") or "Unknown"}
+Match score: {analysis.get("score")}
+Match status: {analysis.get("status")}
+Semantic similarity: {analysis.get("similarity")}
+Depth gap: {analysis.get("depth_gap")}
+Resume signals: {analysis.get("resume_signals")}
+Job description signals: {analysis.get("jd_signals")}
+Resume preview:
+{analysis.get("resume_preview", "")}
+
+API feedback:
+{analysis.get("feedback", "")}
+
+Job description:
+{payload.job_description or ""}
+
+Return valid JSON only, no markdown fences, with this shape:
+{{
+  "summary": "one concise overview sentence",
+  "sections": [
+    {{
+      "title": "section title",
+      "items": [
+        {{
+          "label": "short label",
+          "detail": "specific recommendation",
+          "priority": "High|Medium|Low"
+        }}
+      ]
+    }}
+  ],
+  "next_steps": ["short action", "short action", "short action"]
+}}
+""".strip()
+
+    body = {
+        "model": os.getenv("GROQ_RESOURCE_MODEL", "llama-3.3-70b-versatile"),
+        "messages": [
+            {"role": "system", "content": "Return concise, structured, valid JSON for a resume improvement UI."},
+            {"role": "user", "content": prompt},
+        ],
+        "temperature": 0.35,
+        "response_format": {"type": "json_object"},
+    }
+
+    request = Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps(body).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+
+    try:
+        with urlopen(request, timeout=45) as response:
+            data = json.loads(response.read().decode("utf-8"))
+    except HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        raise HTTPException(status_code=error.code, detail=f"Groq request failed: {detail}") from error
+    except URLError as error:
+        raise HTTPException(status_code=502, detail=f"Groq request failed: {error.reason}") from error
+    except TimeoutError as error:
+        raise HTTPException(status_code=504, detail="Groq request timed out.") from error
+
+    content = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
+    try:
+        parsed = json.loads(content)
+    except json.JSONDecodeError:
+        parsed = {
+            "summary": "The model returned a text response instead of structured JSON.",
+            "sections": [
+                {
+                    "title": tool["title"],
+                    "items": [{"label": "Raw response", "detail": content, "priority": "Medium"}],
+                }
+            ],
+            "next_steps": ["Review the raw response", "Re-run the resource if needed"],
+        }
+
+    return {
+        "resource": tool["title"],
+        "result": parsed,
+    }
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True}
@@ -62,6 +214,11 @@ def health():
 @app.get("/api/roles")
 def roles():
     return {"roles": JOB_OPTIONS}
+
+
+@app.post("/api/resources/{resource_id}")
+def generate_resource(resource_id: str, payload: ResourceRequest):
+    return call_groq(resource_id, payload)
 
 
 @app.post("/api/analyze")

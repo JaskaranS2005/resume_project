@@ -385,6 +385,37 @@ Good resume signals:
 
 const JOB_OPTIONS = Object.fromEntries(ROLE_TEMPLATES.map((template) => [template.name, template.text]));
 
+const RESOURCE_TOOLS = [
+  {
+    id: "resume-checklist",
+    hash: "#resource-resume-checklist",
+    icon: <FileSearch size={28} />,
+    title: "Resume checklist",
+    text: "Generate exact resume edits from the latest match report: keywords, proof, metrics, and rewrite priorities.",
+  },
+  {
+    id: "skill-gap-map",
+    hash: "#resource-skill-gap-map",
+    icon: <Network size={28} />,
+    title: "Skill gap map",
+    text: "Group missing requirements into skill areas with priority, current evidence, and practice direction.",
+  },
+  {
+    id: "project-prompts",
+    hash: "#resource-project-prompts",
+    icon: <ClipboardCheck size={28} />,
+    title: "Project prompts",
+    text: "Turn weak skills into buildable projects with scope, proof points, and resume bullets.",
+  },
+  {
+    id: "interview-prep",
+    hash: "#resource-interview-prep",
+    icon: <GraduationCap size={28} />,
+    title: "Interview prep",
+    text: "Convert the analysis into talking points, likely questions, and STAR-style answer outlines.",
+  },
+];
+
 function loadStoredAnalysis() {
   try {
     const stored = window.localStorage.getItem("resume-ai-latest-analysis");
@@ -605,49 +636,53 @@ function HeroArt() {
   );
 }
 
-function ResourcesPage() {
-  const resources = [
-    {
-      icon: <FileSearch size={28} />,
-      title: "Resume checklist",
-      text: "Keep role keywords close to the work evidence: project scope, tools used, metrics, and business outcome.",
-    },
-    {
-      icon: <Network size={28} />,
-      title: "Skill gap map",
-      text: "Group missing requirements into frontend, backend, data, cloud, and communication so practice stays organized.",
-    },
-    {
-      icon: <ClipboardCheck size={28} />,
-      title: "Project prompts",
-      text: "Turn weak skills into proof by building one small project per gap and writing the result as a resume bullet.",
-    },
-    {
-      icon: <GraduationCap size={28} />,
-      title: "Interview prep",
-      text: "Convert the match report into talking points: strongest overlap, missing areas, and what you are doing next.",
-    },
-  ];
+function ResourceNav({ activeLabel = "Resources" }) {
+  return (
+    <nav className="site-nav resource-nav" aria-label="Resource navigation">
+      <a className="brand" href="#intro">
+        <span className="brand-mark">V</span>
+        <span>Resume AI</span>
+      </a>
+      <div className="nav-links">
+        <a href="#matcher">Analyzer</a>
+        <a href="#chat">Chatbot</a>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#resources">{activeLabel}</a>
+      </div>
+      <div className="nav-actions">
+        <a className="nav-button light" href="#matcher">
+          Back <span className="arrow-dot"><ArrowRight size={22} strokeWidth={3} /></span>
+        </a>
+      </div>
+    </nav>
+  );
+}
+
+function ProtectedResourceEmpty() {
+  return (
+    <main className="resource-page">
+      <ResourceNav />
+      <section className="resource-shell resource-locked">
+        <div className="resource-icon"><Brain size={30} /></div>
+        <h1>Run an analysis first.</h1>
+        <p>
+          These pages use the latest resume score, API feedback, resume preview, and job description as input.
+          Upload a resume and run the analyzer before opening them.
+        </p>
+        <a className="hero-cta" href="#matcher">
+          Open analyzer <span className="arrow-dot"><ArrowRight size={22} strokeWidth={3} /></span>
+        </a>
+      </section>
+    </main>
+  );
+}
+
+function ResourcesPage({ analysis }) {
+  const hasAnalysis = Boolean(analysis);
 
   return (
     <main className="resource-page">
-      <nav className="site-nav resource-nav" aria-label="Resource navigation">
-        <a className="brand" href="#intro">
-          <span className="brand-mark">V</span>
-          <span>Resume AI</span>
-        </a>
-        <div className="nav-links">
-          <a href="#matcher">Analyzer</a>
-          <a href="#chat">Chatbot</a>
-          <a href="#features">Features</a>
-          <a href="#how-it-works">How it works</a>
-        </div>
-        <div className="nav-actions">
-          <a className="nav-button light" href="#matcher">
-            Back <span className="arrow-dot"><ArrowRight size={22} strokeWidth={3} /></span>
-          </a>
-        </div>
-      </nav>
+      <ResourceNav />
 
       <section className="resource-shell">
         <div className="resource-hero">
@@ -655,32 +690,182 @@ function ResourcesPage() {
             <div className="section-kicker">Get more resource</div>
             <h1>Resources for a stronger match.</h1>
             <p>
-              Use these quick references after running the analyzer to improve the resume, close gaps,
-              and prepare cleaner interview answers.
+              Use these API generated pages after running the analyzer. Each page reads the latest analysis
+              and creates a structured output for its own task.
             </p>
           </div>
           <BookOpen size={86} strokeWidth={1.5} />
         </div>
 
         <div className="resource-grid">
-          {resources.map((resource) => (
-            <article className="resource-card" key={resource.title}>
+          {RESOURCE_TOOLS.map((resource) => (
+            <a
+              className={`resource-card ${hasAnalysis ? "" : "locked"}`}
+              href={hasAnalysis ? resource.hash : "#matcher"}
+              key={resource.title}
+            >
               <div className="resource-icon">{resource.icon}</div>
               <h2>{resource.title}</h2>
               <p>{resource.text}</p>
-            </article>
+              <span className="resource-card-action">
+                {hasAnalysis ? "Open generated page" : "Analyze first"} <ArrowRight size={16} />
+              </span>
+            </a>
           ))}
         </div>
 
         <section className="resource-notes">
-          <h2>Quick improvement path</h2>
+          <h2>{hasAnalysis ? "Ready to generate" : "Quick improvement path"}</h2>
           <ol>
-            <li>Run the analyzer with the exact job description.</li>
-            <li>Pick the lowest-signal skill area from the feedback.</li>
-            <li>Build or rewrite one project bullet that proves that skill.</li>
-            <li>Run the resume again and compare the score movement.</li>
+            <li>{hasAnalysis ? "Open any resource page to send the latest analysis to Groq." : "Run the analyzer with the exact job description."}</li>
+            <li>{hasAnalysis ? "Review the structured output and apply the highest priority recommendations." : "Pick the lowest-signal skill area from the feedback."}</li>
+            <li>{hasAnalysis ? "Return to the dashboard or analyzer when you want to re-run the score." : "Build or rewrite one project bullet that proves that skill."}</li>
+            <li>{hasAnalysis ? "Generate the other pages for interview, projects, checklist, and skill planning." : "Run the resume again and compare the score movement."}</li>
           </ol>
         </section>
+      </section>
+    </main>
+  );
+}
+
+function ResourceToolPage({ resourceId, analysis, selectedRole, jobDescription }) {
+  const resource = RESOURCE_TOOLS.find((item) => item.id === resourceId);
+  const [result, setResult] = useState(null);
+  const [loadingResource, setLoadingResource] = useState(false);
+  const [resourceError, setResourceError] = useState("");
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function generateResource() {
+      if (!resource || !analysis) return;
+      setLoadingResource(true);
+      setResourceError("");
+      setResult(null);
+
+      try {
+        const response = await fetch(`/api/resources/${resource.id}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            analysis,
+            job_description: jobDescription,
+            role_template: analysis.role_template || selectedRole,
+          }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Resource generation failed.");
+        }
+        if (isActive) setResult(data.result);
+      } catch (error) {
+        if (isActive) setResourceError(error.message);
+      } finally {
+        if (isActive) setLoadingResource(false);
+      }
+    }
+
+    generateResource();
+    return () => {
+      isActive = false;
+    };
+  }, [analysis, jobDescription, resource, selectedRole]);
+
+  if (!resource) return <ResourcesPage analysis={analysis} />;
+  if (!analysis) return <ProtectedResourceEmpty />;
+
+  const sections = Array.isArray(result?.sections) ? result.sections : [];
+  const nextSteps = Array.isArray(result?.next_steps) ? result.next_steps : [];
+
+  return (
+    <main className="resource-page">
+      <ResourceNav activeLabel={resource.title} />
+
+      <section className="resource-shell generated-resource-shell">
+        <div className="generated-resource-head">
+          <div>
+            <div className="section-kicker">{resource.title}</div>
+            <h1>{resource.title}</h1>
+            <p>
+              Generated from the latest resume analysis, match score, extracted resume text, and API feedback.
+            </p>
+          </div>
+          <div className="generated-resource-icon">{resource.icon}</div>
+        </div>
+
+        <div className="resource-context-strip">
+          <div>
+            <span>Role</span>
+            <strong>{analysis.role_template || selectedRole}</strong>
+          </div>
+          <div>
+            <span>Match</span>
+            <strong>{Number(analysis.score || 0).toFixed(2)}%</strong>
+          </div>
+          <div>
+            <span>Status</span>
+            <strong>{analysis.status}</strong>
+          </div>
+          <div>
+            <span>Depth gap</span>
+            <strong>{analysis.depth_gap}</strong>
+          </div>
+        </div>
+
+        {loadingResource ? (
+          <section className="resource-loading">
+            <Activity size={24} />
+            <strong>Generating {resource.title.toLowerCase()}</strong>
+            <p>Using the latest analysis as input.</p>
+          </section>
+        ) : null}
+
+        {resourceError ? (
+          <section className="dashboard-report-error">
+            {resourceError}
+          </section>
+        ) : null}
+
+        {result && !loadingResource ? (
+          <>
+            <section className="resource-summary-card">
+              <Sparkles size={22} />
+              <p>{result.summary || "Generated resource ready."}</p>
+            </section>
+
+            <div className="generated-section-grid">
+              {sections.map((section, sectionIndex) => (
+                <article className="generated-section-card" key={`${section.title}-${sectionIndex}`}>
+                  <h2>{section.title || `Section ${sectionIndex + 1}`}</h2>
+                  <div className="generated-item-list">
+                    {(section.items || []).map((item, itemIndex) => (
+                      <div className="generated-item" key={`${item.label}-${itemIndex}`}>
+                        <div>
+                          <strong>{item.label || `Item ${itemIndex + 1}`}</strong>
+                          <span className={`priority-pill priority-${String(item.priority || "medium").toLowerCase()}`}>
+                            {item.priority || "Medium"}
+                          </span>
+                        </div>
+                        <p>{item.detail || String(item)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            {nextSteps.length ? (
+              <section className="resource-notes generated-next-steps">
+                <h2>Next steps</h2>
+                <ol>
+                  {nextSteps.map((step, index) => (
+                    <li key={`${step}-${index}`}>{step}</li>
+                  ))}
+                </ol>
+              </section>
+            ) : null}
+          </>
+        ) : null}
       </section>
     </main>
   );
@@ -1292,7 +1477,19 @@ function App() {
   }
 
   if (route === "#resources") {
-    return <ResourcesPage />;
+    return <ResourcesPage analysis={analysis} />;
+  }
+
+  const selectedResource = RESOURCE_TOOLS.find((resource) => resource.hash === route);
+  if (selectedResource) {
+    return (
+      <ResourceToolPage
+        resourceId={selectedResource.id}
+        analysis={analysis}
+        selectedRole={selectedRole}
+        jobDescription={jobDescription}
+      />
+    );
   }
 
   if (route === "#dashboard") {
