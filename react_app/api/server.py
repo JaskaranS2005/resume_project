@@ -5,6 +5,8 @@ from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from typing import List, Dict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -21,7 +23,7 @@ load_dotenv(PROJECT_ROOT / ".env")
 from model.model import compute_final_score
 from preprocessing.preprocessing_pipeline import build_feature_vector
 from utils.file_extractor import extract_image_text, extract_pdf_text
-from utils.llm_helper import generate_feedback
+from utils.llm_helper import generate_feedback, chat_with_groq
 
 JOB_OPTIONS = {
     "Frontend Developer": "Looking for a frontend developer with React, JavaScript, Redux, and API integration experience",
@@ -106,7 +108,35 @@ async def analyze_resume(
             "jd_signals": features.get("jd_signals", []),
             "feedback": feedback,
             "resume_preview": (resume_text or "")[:2500],
+            "resume_text": (resume_text or "")[:12000],
         }
     finally:
         if temp_path and os.path.exists(temp_path):
             os.unlink(temp_path)
+
+
+class ChatRequest(BaseModel):
+    resume_text: str
+    job_description: str
+    messages: List[Dict[str, str]]
+
+@app.post("/api/chat")
+def chat_endpoint(req: ChatRequest):
+    try:
+        messages = []
+        for msg in (req.messages or [])[-12:]:
+            role = msg.get("role")
+            content = str(msg.get("content", "")).strip()
+            if role in {"user", "assistant"} and content:
+                messages.append({"role": role, "content": content})
+        if not req.resume_text.strip():
+            raise HTTPException(status_code=400, detail="Resume text is required for chat.")
+        if not messages:
+            raise HTTPException(status_code=400, detail="Add at least one chat message.")
+
+        reply = chat_with_groq(req.resume_text, req.job_description, messages)
+        return {"reply": reply}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

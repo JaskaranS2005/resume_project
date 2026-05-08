@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BarChart3,
   BookOpen,
+  Bot,
   Brain,
   Check,
   ChevronDown,
@@ -15,6 +16,7 @@ import {
   GraduationCap,
   Layers,
   Network,
+  Send,
   Sparkles,
   Target,
   TrendingDown,
@@ -636,6 +638,7 @@ function ResourcesPage() {
         </a>
         <div className="nav-links">
           <a href="#matcher">Analyzer</a>
+          <a href="#chat">Chatbot</a>
           <a href="#features">Features</a>
           <a href="#how-it-works">How it works</a>
         </div>
@@ -779,6 +782,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
         <a className="dash-mark" href="#intro">V</a>
         <a className="dash-side-link active" href="#dashboard"><BarChart3 size={20} />Dashboard</a>
         <a className="dash-side-link" href="#matcher"><FileSearch size={20} />Analyzer</a>
+        <a className="dash-side-link" href="#chat"><Bot size={20} />Chatbot</a>
         <a className="dash-side-link" href="#resources"><BookOpen size={20} />Resources</a>
         <a className="dash-side-link" href="#dashboard-report"><Brain size={20} />Report</a>
       </aside>
@@ -790,6 +794,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
             <p>{selectedRole} match report generated from the latest resume upload.</p>
           </div>
           <div className="dashboard-actions">
+            <a className="nav-button" href="#chat">Ask chatbot</a>
             <a className="nav-button" href="#matcher">Run another</a>
           </div>
         </header>
@@ -992,12 +997,153 @@ function AnalyzerPage({
   );
 }
 
+function ChatbotPage({
+  selectedRole,
+  selectedTemplate,
+  jobDescription,
+  resumeFile,
+  analysis,
+  chatMessages,
+  chatInput,
+  preparingChat,
+  chatLoading,
+  message,
+  onRoleChange,
+  onJobDescriptionChange,
+  onResumeFileChange,
+  onPrepareChat,
+  onChatInputChange,
+  onSendChat,
+}) {
+  const resumeText = analysis?.resume_text || analysis?.resume_preview || "";
+  const hasResumeContext = Boolean(resumeText.trim());
+
+  return (
+    <main className="chatbot-page">
+      <nav className="site-nav analyzer-nav" aria-label="Chatbot navigation">
+        <a className="brand" href="#intro">
+          <span className="brand-mark">V</span>
+          <span>Resume AI</span>
+        </a>
+        <div className="nav-links">
+          <a href="#matcher">Analyzer</a>
+          <a href="#dashboard">Dashboard</a>
+          <a href="#resources">Resources</a>
+        </div>
+        <div className="nav-actions">
+          <a className="nav-button light" href="#matcher">
+            Analyzer <span className="arrow-dot"><ArrowRight size={22} strokeWidth={3} /></span>
+          </a>
+        </div>
+      </nav>
+
+      <section className="chat-shell">
+        <div className="chat-setup">
+          <div className="section-kicker">Resume chatbot</div>
+          <h1>Ask sharper questions about your resume.</h1>
+          <p>
+            Upload a resume once, choose the target role, then ask Groq for specific changes,
+            missing skills, project ideas, and interview talking points.
+          </p>
+
+          <form className="chat-upload-panel" onSubmit={onPrepareChat}>
+            <label htmlFor="chat-role-template">Role template</label>
+            <RoleDropdown selectedRole={selectedRole} onSelect={onRoleChange} />
+            <p className="chat-template-note">{selectedTemplate.level}: {selectedTemplate.summary}</p>
+            <label htmlFor="chat-job-description">Job description</label>
+            <textarea
+              id="chat-job-description"
+              className="chat-job-textarea"
+              value={jobDescription}
+              onChange={onJobDescriptionChange}
+              placeholder="Paste the target job description here."
+              rows={6}
+            />
+            <label htmlFor="chat-resume-file">Resume file</label>
+            <div className="upload-box chat-upload-box">
+              <input
+                id="chat-resume-file"
+                type="file"
+                accept=".pdf,.png,.jpg,.jpeg"
+                onChange={(event) => onResumeFileChange(event.target.files?.[0] || null)}
+              />
+              <Upload size={26} />
+              <span>{resumeFile ? resumeFile.name : "Choose PDF, PNG, JPG, or JPEG"}</span>
+            </div>
+            <button className="run-button" disabled={preparingChat} type="submit">
+              {preparingChat ? "Reading resume..." : hasResumeContext ? "Refresh resume context" : "Start chatbot"}
+            </button>
+            {message ? <div className="notice">{message}</div> : null}
+          </form>
+        </div>
+
+        <section className="chat-panel" aria-label="Resume chatbot conversation">
+          <div className="chat-panel-head">
+            <span><Bot size={22} /></span>
+            <div>
+              <h2>Career assistant</h2>
+              <p>{hasResumeContext ? `${analysis?.resume_file_name || "Resume"} is ready for questions.` : "Upload a resume to unlock chat."}</p>
+            </div>
+          </div>
+
+          <div className="chat-thread">
+            {chatMessages.length ? (
+              chatMessages.map((chatMessage, index) => (
+                <article className={`chat-bubble ${chatMessage.role === "user" ? "user" : "assistant"}`} key={`${chatMessage.role}-${index}`}>
+                  <strong>{chatMessage.role === "user" ? "You" : "Resume AI"}</strong>
+                  <p>{chatMessage.content}</p>
+                </article>
+              ))
+            ) : (
+              <div className="chat-empty">
+                <Bot size={42} />
+                <h3>Ready when your resume is.</h3>
+                <p>After upload, try asking for the top five changes, missing keywords, or a stronger project section.</p>
+              </div>
+            )}
+            {chatLoading ? (
+              <article className="chat-bubble assistant">
+                <strong>Resume AI</strong>
+                <p>Thinking through your resume...</p>
+              </article>
+            ) : null}
+          </div>
+
+          <form className="chat-composer" onSubmit={onSendChat}>
+            <input
+              type="text"
+              value={chatInput}
+              disabled={!hasResumeContext || chatLoading}
+              onChange={(event) => onChatInputChange(event.target.value)}
+              placeholder={hasResumeContext ? "Ask for resume suggestions..." : "Upload a resume first"}
+            />
+            <button type="submit" disabled={!hasResumeContext || chatLoading || !chatInput.trim()} aria-label="Send message">
+              <Send size={20} />
+            </button>
+          </form>
+        </section>
+      </section>
+    </main>
+  );
+}
+
 function App() {
   const [selectedRole, setSelectedRole] = useState("Frontend Developer");
   const [jobDescription, setJobDescription] = useState(JOB_OPTIONS["Frontend Developer"]);
   const [resumeFile, setResumeFile] = useState(null);
   const [analysis, setAnalysis] = useState(() => loadStoredAnalysis());
   const [loading, setLoading] = useState(false);
+  const [preparingChat, setPreparingChat] = useState(false);
+  const [chatLoading, setChatLoading] = useState(false);
+  const [chatMessages, setChatMessages] = useState(() => {
+    try {
+      const stored = window.localStorage.getItem("resume-ai-chat-messages");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [chatInput, setChatInput] = useState("");
   const [message, setMessage] = useState("");
   const [route, setRoute] = useState(window.location.hash || "#intro");
 
@@ -1015,6 +1161,16 @@ function App() {
     if (role !== "Custom") {
       setJobDescription(JOB_OPTIONS[role]);
     }
+  }
+
+  function saveAnalysis(nextAnalysis) {
+    setAnalysis(nextAnalysis);
+    window.localStorage.setItem("resume-ai-latest-analysis", JSON.stringify(nextAnalysis));
+  }
+
+  function saveChatMessages(nextMessages) {
+    setChatMessages(nextMessages);
+    window.localStorage.setItem("resume-ai-chat-messages", JSON.stringify(nextMessages.slice(-12)));
   }
 
   async function runAnalysis(event) {
@@ -1045,13 +1201,93 @@ function App() {
         resume_file_name: resumeFile?.name || "Uploaded resume",
         role_template: selectedRole,
       };
-      setAnalysis(nextAnalysis);
-      window.localStorage.setItem("resume-ai-latest-analysis", JSON.stringify(nextAnalysis));
+      saveAnalysis(nextAnalysis);
       window.location.hash = "#dashboard";
     } catch (error) {
       setMessage(error.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function prepareChat(event) {
+    event.preventDefault();
+    setMessage("");
+
+    if (!resumeFile || !jobDescription.trim()) {
+      setMessage("Please upload a resume and add a job description before starting the chatbot.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("resume", resumeFile);
+    formData.append("job_description", jobDescription);
+
+    setPreparingChat(true);
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "Could not read the resume.");
+      }
+      const nextAnalysis = {
+        ...data,
+        resume_file_name: resumeFile?.name || "Uploaded resume",
+        role_template: selectedRole,
+      };
+      saveAnalysis(nextAnalysis);
+      saveChatMessages([
+        {
+          role: "assistant",
+          content: `I read ${nextAnalysis.resume_file_name} for the ${selectedRole} target. Ask me what to improve, which keywords are missing, or how to rewrite a section.`,
+        },
+      ]);
+    } catch (error) {
+      setMessage(error.message);
+    } finally {
+      setPreparingChat(false);
+    }
+  }
+
+  async function sendChatMessage(event) {
+    event.preventDefault();
+    const content = chatInput.trim();
+    if (!content || chatLoading) return;
+
+    const resumeText = analysis?.resume_text || analysis?.resume_preview || "";
+    if (!resumeText.trim()) {
+      setMessage("Upload a resume first so the chatbot has context.");
+      return;
+    }
+
+    const nextMessages = [...chatMessages, { role: "user", content }];
+    saveChatMessages(nextMessages);
+    setChatInput("");
+    setChatLoading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resume_text: resumeText,
+          job_description: jobDescription,
+          messages: nextMessages,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.detail || "Chat request failed.");
+      }
+      saveChatMessages([...nextMessages, { role: "assistant", content: data.reply || "I could not generate a reply." }]);
+    } catch (error) {
+      saveChatMessages([...nextMessages, { role: "assistant", content: error.message }]);
+    } finally {
+      setChatLoading(false);
     }
   }
 
@@ -1066,6 +1302,32 @@ function App() {
         selectedRole={selectedRole}
         selectedTemplate={getRoleTemplate(selectedRole)}
         resumeFile={resumeFile}
+      />
+    );
+  }
+
+  if (route === "#chat") {
+    return (
+      <ChatbotPage
+        selectedRole={selectedRole}
+        selectedTemplate={getRoleTemplate(selectedRole)}
+        jobDescription={jobDescription}
+        resumeFile={resumeFile}
+        analysis={analysis}
+        chatMessages={chatMessages}
+        chatInput={chatInput}
+        preparingChat={preparingChat}
+        chatLoading={chatLoading}
+        message={message}
+        onRoleChange={handleRoleChange}
+        onJobDescriptionChange={(event) => {
+          setJobDescription(event.target.value);
+          if (selectedRole !== "Custom") setSelectedRole("Custom");
+        }}
+        onResumeFileChange={setResumeFile}
+        onPrepareChat={prepareChat}
+        onChatInputChange={setChatInput}
+        onSendChat={sendChatMessage}
       />
     );
   }
@@ -1100,6 +1362,7 @@ function App() {
           </a>
           <div className="nav-links">
             <a href="#matcher">Analyzer</a>
+            <a href="#chat">Chatbot</a>
             <a href="#features">Features</a>
             <a href="#how-it-works">How it works</a>
           </div>
@@ -1135,6 +1398,9 @@ function App() {
             </a>
             <a className="chip-link chip-3" href="#how-it-works">
               <Check size={18} /> Skill-depth signal review
+            </a>
+            <a className="chip-link chip-4" href="#chat">
+              <Bot size={18} /> Resume advice chatbot
             </a>
             <HeroArt />
           </div>
