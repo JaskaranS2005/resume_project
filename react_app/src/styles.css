@@ -1303,18 +1303,19 @@ textarea:focus,
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 18px;
   overflow: hidden;
-  padding: 88px 28px 28px;
+  min-height: 430px;
+  padding: 28px;
   position: relative;
 }
 
 .workflow-wave {
-  height: 190px;
-  inset: 42px 22px auto;
+  height: 230px;
+  inset: 70px 36px auto;
   overflow: visible;
   pointer-events: none;
   position: absolute;
-  width: calc(100% - 44px);
-  z-index: 3;
+  width: calc(100% - 72px);
+  z-index: 1;
 }
 
 .workflow-wave-path {
@@ -1335,26 +1336,24 @@ textarea:focus,
 }
 
 .workflow-flow {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  height: 330px;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .workflow-step {
   animation: workflowStepLive 5.6s ease-in-out infinite;
-  backdrop-filter: blur(20px) saturate(150%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.06)),
-    rgba(255, 255, 255, 0.055);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+    linear-gradient(145deg, #8a858f, #746f79),
+    #7c7681;
+  border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 14px;
   min-height: 166px;
   padding: 18px 16px;
-  position: relative;
+  position: absolute;
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  width: 15.2%;
+  z-index: 3;
 }
 
 .workflow-step::after {
@@ -1365,6 +1364,36 @@ textarea:focus,
   border-color: rgba(234, 215, 255, 0.34);
   box-shadow: 0 20px 54px rgba(155, 44, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   transform: translateY(-4px);
+}
+
+.workflow-step:nth-child(1) {
+  left: 0.6%;
+  top: 124px;
+}
+
+.workflow-step:nth-child(2) {
+  left: 17.3%;
+  top: 70px;
+}
+
+.workflow-step:nth-child(3) {
+  left: 34%;
+  top: 168px;
+}
+
+.workflow-step:nth-child(4) {
+  left: 50.7%;
+  top: 124px;
+}
+
+.workflow-step:nth-child(5) {
+  left: 67.4%;
+  top: 70px;
+}
+
+.workflow-step:nth-child(6) {
+  left: 84%;
+  top: 138px;
 }
 
 .workflow-dot {
@@ -2031,8 +2060,8 @@ textarea:focus,
   0%,
   18% {
     background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
-      rgba(155, 44, 255, 0.14);
+      linear-gradient(145deg, #a29aaa, #82768d),
+      #8d8496;
     border-color: rgba(234, 215, 255, 0.48);
     box-shadow: 0 18px 50px rgba(155, 44, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28);
   }
@@ -2040,9 +2069,9 @@ textarea:focus,
   30%,
   100% {
     background:
-      linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.06)),
-      rgba(255, 255, 255, 0.055);
-    border-color: rgba(255, 255, 255, 0.16);
+      linear-gradient(145deg, #8a858f, #746f79),
+      #7c7681;
+    border-color: rgba(255, 255, 255, 0.24);
     box-shadow: none;
   }
 }
@@ -2317,6 +2346,7 @@ textarea:focus,
   }
 
   .workflow-chart {
+    min-height: 0;
     padding: 18px;
   }
 
@@ -2325,6 +2355,8 @@ textarea:focus,
   }
 
   .workflow-flow {
+    display: grid;
+    height: auto;
     grid-template-columns: 1fr;
     position: relative;
   }
@@ -2343,6 +2375,10 @@ textarea:focus,
   .workflow-step {
     min-height: auto;
     padding-left: 72px;
+    position: relative;
+    top: auto;
+    left: auto;
+    width: auto;
     z-index: 1;
   }
 
