@@ -1303,18 +1303,18 @@ textarea:focus,
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 18px;
   overflow: hidden;
-  padding: 42px 28px 28px;
+  padding: 88px 28px 28px;
   position: relative;
 }
 
 .workflow-wave {
-  display: block;
-  height: 150px;
-  margin: 0 0 -84px;
+  height: 190px;
+  inset: 42px 22px auto;
   overflow: visible;
-  position: relative;
-  width: 100%;
-  z-index: 0;
+  pointer-events: none;
+  position: absolute;
+  width: calc(100% - 44px);
+  z-index: 3;
 }
 
 .workflow-wave-path {
@@ -1343,6 +1343,7 @@ textarea:focus,
 }
 
 .workflow-step {
+  animation: workflowStepLive 5.6s ease-in-out infinite;
   backdrop-filter: blur(20px) saturate(150%);
   background:
     linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.06)),
@@ -1368,7 +1369,7 @@ textarea:focus,
 
 .workflow-dot {
   align-items: center;
-  animation: workflowPulse 2.4s ease-in-out infinite;
+  animation: workflowDotLive 5.6s ease-in-out infinite;
   background: #eadcf8;
   border: 2px solid #813bb2;
   border-radius: 999px;
@@ -1379,27 +1380,39 @@ textarea:focus,
   height: 48px;
   justify-content: center;
   margin-bottom: 18px;
+  position: relative;
+  z-index: 4;
   width: 48px;
 }
 
+.workflow-step:nth-child(1),
+.workflow-step:nth-child(1) .workflow-dot {
+  animation-delay: 0s;
+}
+
+.workflow-step:nth-child(2),
 .workflow-step:nth-child(2) .workflow-dot {
-  animation-delay: 0.12s;
+  animation-delay: 0.93s;
 }
 
+.workflow-step:nth-child(3),
 .workflow-step:nth-child(3) .workflow-dot {
-  animation-delay: 0.24s;
+  animation-delay: 1.86s;
 }
 
+.workflow-step:nth-child(4),
 .workflow-step:nth-child(4) .workflow-dot {
-  animation-delay: 0.36s;
+  animation-delay: 2.79s;
 }
 
+.workflow-step:nth-child(5),
 .workflow-step:nth-child(5) .workflow-dot {
-  animation-delay: 0.48s;
+  animation-delay: 3.72s;
 }
 
+.workflow-step:nth-child(6),
 .workflow-step:nth-child(6) .workflow-dot {
-  animation-delay: 0.6s;
+  animation-delay: 4.65s;
 }
 
 .workflow-label {
@@ -2014,6 +2027,46 @@ textarea:focus,
   }
 }
 
+@keyframes workflowStepLive {
+  0%,
+  18% {
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.08)),
+      rgba(155, 44, 255, 0.14);
+    border-color: rgba(234, 215, 255, 0.48);
+    box-shadow: 0 18px 50px rgba(155, 44, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
+
+  30%,
+  100% {
+    background:
+      linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.06)),
+      rgba(255, 255, 255, 0.055);
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow: none;
+  }
+}
+
+@keyframes workflowDotLive {
+  0%,
+  18% {
+    background: #ffffff;
+    border-color: #b56cff;
+    box-shadow: 0 0 0 8px rgba(155, 44, 255, 0.18), 0 0 30px rgba(192, 132, 252, 0.78);
+    color: #6f23b4;
+    transform: scale(1.08);
+  }
+
+  30%,
+  100% {
+    background: #eadcf8;
+    border-color: #813bb2;
+    box-shadow: none;
+    color: #813bb2;
+    transform: scale(1);
+  }
+}
+
 @keyframes thinkingDot {
   0%,
   100% {
@@ -2268,19 +2321,29 @@ textarea:focus,
   }
 
   .workflow-wave {
-    height: 220px;
-    margin: 0 0 -180px;
-    transform: rotate(90deg) scaleX(0.62);
-    transform-origin: 50% 50%;
+    display: none !important;
   }
 
   .workflow-flow {
     grid-template-columns: 1fr;
+    position: relative;
+  }
+
+  .workflow-flow::before {
+    background: repeating-linear-gradient(180deg, rgba(192, 132, 252, 0.55) 0 12px, transparent 12px 24px);
+    border-radius: 999px;
+    content: "";
+    inset: 38px auto 38px 40px;
+    opacity: 0.5;
+    position: absolute;
+    width: 4px;
+    z-index: 0;
   }
 
   .workflow-step {
     min-height: auto;
     padding-left: 72px;
+    z-index: 1;
   }
 
   .workflow-dot {

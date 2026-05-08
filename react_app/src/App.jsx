@@ -1207,16 +1207,16 @@ function App() {
             </p>
           </div>
           <div className="workflow-chart" aria-label="Animated resume matcher workflow">
-            <svg className="workflow-wave" viewBox="0 0 1000 160" aria-hidden="true" preserveAspectRatio="none">
+            <svg className="workflow-wave" viewBox="0 0 1000 190" aria-hidden="true" preserveAspectRatio="none">
               <path
                 className="workflow-wave-path"
-                d="M40 86 C130 18 210 18 300 86 S470 154 560 86 S730 18 820 86 S930 154 970 86"
+                d="M60 112 C150 32 230 32 320 112 S490 192 580 112 S750 32 840 112 S945 174 940 112"
               />
               <circle className="workflow-wave-ball" r="12">
                 <animateMotion
                   dur="5.6s"
                   repeatCount="indefinite"
-                  path="M40 86 C130 18 210 18 300 86 S470 154 560 86 S730 18 820 86 S930 154 970 86"
+                  path="M60 112 C150 32 230 32 320 112 S490 192 580 112 S750 32 840 112 S945 174 940 112"
                 />
               </circle>
             </svg>
