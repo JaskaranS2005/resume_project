@@ -737,6 +737,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
       value: `${score.toFixed(2)}%`,
       detail: analysis.status,
       tone: score >= 70 ? "up" : "down",
+      description: "The final computed match score combining semantic similarity and depth health."
     },
     {
       icon: <Eye size={22} />,
@@ -744,6 +745,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
       value: Number(analysis.similarity || 0).toFixed(2),
       detail: "TF-IDF cosine similarity",
       tone: similarityPercent >= 50 ? "up" : "down",
+      description: "How well the resume's language matches the job description based on text overlap."
     },
     {
       icon: <Layers size={22} />,
@@ -751,6 +753,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
       value: depthGap,
       detail: "Skill-depth mismatch",
       tone: depthGap <= 1 ? "up" : "down",
+      description: "The penalty applied based on missing crucial skills and lack of depth."
     },
     {
       icon: <Target size={22} />,
@@ -758,6 +761,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
       value: `${signalCoverage}%`,
       detail: `${resumeSignalCount + jdSignalCount} detected signals`,
       tone: signalCoverage >= 45 ? "up" : "down",
+      description: "Percentage of key signals from the role template detected in your resume."
     },
     {
       icon: <FileText size={22} />,
@@ -765,6 +769,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
       value: resumeWords,
       detail: analysis.resume_file_name || resumeFile?.name || "Extracted preview",
       tone: resumeWords >= 120 ? "up" : "down",
+      description: "The total number of words successfully extracted from your uploaded resume."
     },
   ];
 
@@ -785,7 +790,6 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
             <p>{selectedRole} match report generated from the latest resume upload.</p>
           </div>
           <div className="dashboard-actions">
-            <span className={`status-box ${statusClass(analysis.status)}`}>{analysis.status}</span>
             <a className="nav-button" href="#matcher">Run another</a>
           </div>
         </header>
@@ -803,11 +807,17 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
             <span>Resume file</span>
             <strong>{analysis.resume_file_name || resumeFile?.name || "Uploaded resume"}</strong>
           </div>
+          <div>
+            <span>Match status</span>
+            <div style={{ display: 'flex', alignItems: 'center', height: '100%', marginTop: '2px' }}>
+              <span className={`status-box ${statusClass(analysis.status)}`} style={{ display: 'inline-flex' }}>{analysis.status}</span>
+            </div>
+          </div>
         </div>
 
         <div className="dashboard-kpis">
           {kpis.map((kpi) => (
-            <article className="dash-kpi-card" key={kpi.label}>
+            <article className="dash-kpi-card" key={kpi.label} data-tooltip={kpi.description}>
               <div className="dash-kpi-head">
                 <span>{kpi.icon}</span>
                 {kpi.tone === "up" ? <TrendingUp size={18} /> : <TrendingDown size={18} />}

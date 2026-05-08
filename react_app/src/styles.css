@@ -960,30 +960,40 @@ textarea:focus,
 }
 
 .status-box {
-  border-radius: 8px;
-  display: inline-block;
-  font-size: 13px;
-  font-weight: 720;
-  margin-top: 18px;
-  padding: 8px 11px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 6px 14px;
+  text-transform: uppercase;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .status-strong {
-  background: rgba(114, 215, 155, 0.14);
-  border: 1px solid rgba(114, 215, 155, 0.34);
-  color: #187345;
+  background: rgba(46, 213, 115, 0.15);
+  border: 1px solid rgba(46, 213, 115, 0.4);
+  box-shadow: 0 0 15px rgba(46, 213, 115, 0.2), inset 0 0 8px rgba(46, 213, 115, 0.1);
+  color: #7bed9f;
+  text-shadow: 0 0 8px rgba(123, 237, 159, 0.4);
 }
 
 .status-moderate {
-  background: rgba(231, 189, 103, 0.16);
-  border: 1px solid rgba(231, 189, 103, 0.36);
-  color: #8c5e09;
+  background: rgba(255, 165, 2, 0.15);
+  border: 1px solid rgba(255, 165, 2, 0.4);
+  box-shadow: 0 0 15px rgba(255, 165, 2, 0.2), inset 0 0 8px rgba(255, 165, 2, 0.1);
+  color: #eccc68;
+  text-shadow: 0 0 8px rgba(236, 204, 104, 0.4);
 }
 
 .status-weak {
-  background: rgba(255, 119, 119, 0.14);
-  border: 1px solid rgba(255, 119, 119, 0.32);
-  color: #a92a2a;
+  background: rgba(255, 71, 87, 0.15);
+  border: 1px solid rgba(255, 71, 87, 0.4);
+  box-shadow: 0 0 15px rgba(255, 71, 87, 0.2), inset 0 0 8px rgba(255, 71, 87, 0.1);
+  color: #ff6b81;
+  text-shadow: 0 0 8px rgba(255, 107, 129, 0.4);
 }
 
 .empty-copy {
@@ -1687,7 +1697,40 @@ textarea:focus,
   border-radius: 16px;
   min-height: 142px;
   padding: 18px;
+  position: relative;
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.dash-kpi-card::after {
+  background: #190c27;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  bottom: 110%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  content: attr(data-tooltip);
+  font-size: 13px;
+  font-weight: 500;
+  left: 50%;
+  line-height: 1.4;
+  max-width: 200px;
+  opacity: 0;
+  padding: 10px 14px;
+  pointer-events: none;
+  position: absolute;
+  text-align: center;
+  transform: translateX(-50%) translateY(10px);
+  transition: all 0.2s ease;
+  visibility: hidden;
+  white-space: normal;
+  width: max-content;
+  z-index: 100;
+}
+
+.dash-kpi-card:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  visibility: visible;
 }
 
 .dash-kpi-card:hover {
