@@ -1643,7 +1643,7 @@ function App() {
 
         <div className="hero-grid">
           <div>
-            <h1 className="hero-title">
+            <h1 className="hero-title liquid-title">
               Stop guessing. Start matching <span>resumes.</span>
             </h1>
             <p className="hero-copy">
