@@ -657,42 +657,6 @@ function RoleDropdown({ selectedRole, onSelect }) {
   );
 }
 
-function HeroArt() {
-  return (
-    <svg className="hero-art" viewBox="0 0 560 430" role="img" aria-label="Resume analysis illustration">
-      <defs>
-        <linearGradient id="portal" x1="0" x2="1" y1="0" y2="1">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.9" />
-          <stop offset="1" stopColor="#9b2cff" stopOpacity="0.18" />
-        </linearGradient>
-        <filter id="glow">
-          <feGaussianBlur stdDeviation="8" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
-      </defs>
-      <g className="hero-orbit hero-resume">
-        <rect x="92" y="88" width="160" height="210" rx="34" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.25)" />
-        <rect x="126" y="124" width="92" height="128" rx="18" fill="url(#portal)" opacity="0.9" />
-      </g>
-      <g className="hero-orbit hero-check">
-        <rect x="160" y="270" width="76" height="74" rx="12" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.34)" />
-        <path d="M181 306 L196 321 L222 290" fill="none" stroke="#e8b6ff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
-      </g>
-      <g className="hero-orbit hero-person hero-person-a">
-        <circle cx="446" cy="266" r="35" fill="rgba(255,255,255,0.72)" />
-        <path d="M410 352 C415 312 476 312 482 352 C468 368 427 368 410 352 Z" fill="rgba(255,255,255,0.62)" />
-      </g>
-      <g className="hero-orbit hero-person hero-person-b">
-        <circle cx="518" cy="232" r="32" fill="rgba(255,255,255,0.55)" />
-        <path d="M484 316 C490 279 546 279 552 316 C538 331 500 331 484 316 Z" fill="rgba(255,255,255,0.42)" />
-      </g>
-    </svg>
-  );
-}
-
 function ResourceNav({ activeLabel = "Resources", backHref = "#matcher" }) {
   return (
     <nav className="site-nav resource-nav" aria-label="Resource navigation">
@@ -1657,7 +1621,6 @@ function App() {
             <a className="chip-link chip-4" href="#chat">
               <Bot size={18} /> Resume advice chatbot
             </a>
-            <HeroArt />
           </div>
         </div>
       </section>

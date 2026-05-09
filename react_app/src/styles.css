@@ -267,9 +267,15 @@ main {
 }
 
 .floating-chips {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  justify-content: center;
   min-height: 520px;
   position: relative;
   perspective: 900px;
+  padding: 34px 0 0 18px;
 }
 
 .chip-link {
@@ -281,15 +287,17 @@ main {
   box-shadow: var(--glass-shadow);
   color: rgba(255, 255, 255, 0.72);
   display: inline-flex;
-  font-size: 16px;
-  font-weight: 620;
-  gap: 12px;
-  padding: 15px 22px;
-  position: absolute;
+  font-size: clamp(16px, 1.35vw, 21px);
+  font-weight: 720;
+  gap: 15px;
+  min-height: 64px;
+  padding: 14px 25px;
+  position: relative;
   overflow: hidden;
   z-index: 3;
-  transition: border-color 180ms ease, box-shadow 180ms ease, color 180ms ease, transform 180ms ease;
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, color 220ms ease, transform 220ms ease;
   white-space: nowrap;
+  width: min(100%, 520px);
   -webkit-backdrop-filter: blur(28px) saturate(175%);
 }
 
@@ -309,12 +317,30 @@ main {
   position: absolute;
 }
 
+.chip-link::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.46), transparent);
+  content: "";
+  inset: -40% auto -40% -30%;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-180%) skewX(-18deg);
+  transition: transform 620ms ease;
+  width: 28%;
+}
+
 .chip-link:hover {
   animation: none;
-  border-color: rgba(255, 255, 255, 0.38);
-  box-shadow: 0 24px 70px rgba(155, 44, 255, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.34);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08)),
+    rgba(153, 102, 214, 0.36);
+  border-color: rgba(255, 255, 255, 0.42);
+  box-shadow: 0 22px 54px rgba(155, 44, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.34);
   color: #ffffff;
-  transform: translateY(-6px) scale(1.02);
+  transform: translateX(12px) scale(1.018);
+}
+
+.chip-link:hover::after {
+  transform: translateX(560%) skewX(-18deg);
 }
 
 .chip-link > * {
@@ -324,80 +350,29 @@ main {
 
 .chip-link svg {
   color: var(--purple);
+  flex: 0 0 auto;
+  height: 21px;
+  width: 21px;
 }
 
 .chip-1 {
   animation: chipHoverOne 7s ease-in-out infinite;
-  right: 22px;
-  top: 26px;
+  width: min(100%, 410px);
 }
 
 .chip-2 {
   animation: chipHoverTwo 7.8s ease-in-out infinite;
-  right: -18px;
-  top: 190px;
+  width: min(100%, 500px);
 }
 
 .chip-3 {
   animation: chipHoverThree 8.4s ease-in-out infinite;
-  left: 54px;
-  top: 312px;
+  width: min(100%, 430px);
 }
 
 .chip-4 {
   animation: chipHoverTwo 8.1s ease-in-out infinite;
-  bottom: 68px;
-  right: -4px;
-}
-
-.hero-art {
-  animation: artHover 9s ease-in-out infinite;
-  max-width: 500px;
-  opacity: 0.86;
-  position: absolute;
-  right: 134px;
-  top: -18px;
-  transition: transform 260ms ease, opacity 260ms ease;
-  transform-origin: 52% 54%;
-  width: min(34vw, 480px);
-  z-index: 1;
-}
-
-.hero-orbit {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.hero-ribbon {
-  animation: ribbonBreathe 7.5s ease-in-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-.hero-resume {
-  animation: resumeFloat 6.8s ease-in-out infinite;
-}
-
-.hero-check {
-  animation: checkFloat 5.4s ease-in-out infinite;
-}
-
-.hero-person-a {
-  animation: personFloatA 6.2s ease-in-out infinite;
-}
-
-.hero-person-b {
-  animation: personFloatB 7.1s ease-in-out infinite;
-}
-
-.floating-chips:hover .hero-art {
-  animation: none;
-  transform: translateY(-8px) rotateX(2deg) rotateY(-3deg);
-}
-
-.floating-chips:hover .hero-ribbon {
-  animation: none;
-  opacity: 0.72;
+  width: min(100%, 420px);
 }
 
 .matcher-shell {
@@ -2608,17 +2583,6 @@ textarea:focus,
   }
 }
 
-@keyframes artHover {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-
-  50% {
-    transform: translate3d(0, -10px, 0) rotate(-0.7deg);
-  }
-}
-
 @keyframes liquidFill {
   0% {
     background-position: 0 18px, 120px 28px, 0 118%;
@@ -2663,63 +2627,6 @@ textarea:focus,
 
   50% {
     transform: translate3d(-7px, -8px, 0);
-  }
-}
-
-@keyframes ribbonBreathe {
-  0%,
-  100% {
-    opacity: 0.46;
-    transform: translateY(0) scaleX(1);
-  }
-
-  50% {
-    opacity: 0.68;
-    transform: translateY(-7px) scaleX(1.02);
-  }
-}
-
-@keyframes resumeFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) rotate(0deg);
-  }
-
-  50% {
-    transform: translate3d(0, -12px, 0) rotate(-1deg);
-  }
-}
-
-@keyframes checkFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate3d(4px, -10px, 0) scale(1.035);
-  }
-}
-
-@keyframes personFloatA {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(-6px, -12px, 0);
-  }
-}
-
-@keyframes personFloatB {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-
-  50% {
-    transform: translate3d(7px, -9px, 0);
   }
 }
 
@@ -2821,12 +2728,6 @@ textarea:focus,
   .chip-link {
     margin: 0 10px 12px 0;
     position: static;
-  }
-
-  .hero-art {
-    margin-top: 12px;
-    position: static;
-    width: 100%;
   }
 
   .matcher-shell,
