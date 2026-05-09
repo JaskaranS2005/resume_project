@@ -28,6 +28,17 @@ def _safe_float(raw_value, default_value):
         return default_value
 
 
+def _groq_base_url():
+    base_url = os.getenv("GROQ_BASE_URL", "https://api.groq.com").strip().rstrip("/")
+    if base_url.endswith("/openai/v1"):
+        base_url = base_url[: -len("/openai/v1")]
+    return base_url or "https://api.groq.com"
+
+
+def _make_groq_client(groq_module, api_key):
+    return groq_module.Groq(api_key=api_key, base_url=_groq_base_url())
+
+
 def _build_prompt(resume_text, jd, score, resume_max_chars=1200, jd_max_chars=1000):
     resume_slice = (resume_text or "")[: max(200, int(resume_max_chars))]
     jd_slice = (jd or "")[: max(200, int(jd_max_chars))]
@@ -164,7 +175,7 @@ def _generate_with_groq(resume_text, jd, score):
         return "Error: `groq` package is not installed. Run `pip install groq`."
 
     try:
-        client = groq.Groq(api_key=api_key)
+        client = _make_groq_client(groq, api_key)
         model = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
         prompt = _build_prompt(resume_text, jd, score)
 
@@ -241,7 +252,7 @@ def chat_with_groq(resume_text, jd, messages):
         return "Error: `groq` package is not installed. Run `pip install groq`."
 
     try:
-        client = groq.Groq(api_key=api_key)
+        client = _make_groq_client(groq, api_key)
         model = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
         
         system_prompt = f"""You are a helpful and expert career assistant. 

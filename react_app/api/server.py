@@ -2,8 +2,6 @@ import os
 import sys
 import json
 import tempfile
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
@@ -27,7 +25,7 @@ load_dotenv(PROJECT_ROOT / "react_app" / ".env")
 from model.model import compute_final_score
 from preprocessing.preprocessing_pipeline import build_feature_vector
 from utils.file_extractor import extract_image_text, extract_pdf_text
-from utils.llm_helper import generate_feedback, chat_with_groq
+from utils.llm_helper import _make_groq_client, generate_feedback, chat_with_groq
 
 JOB_OPTIONS = {
     "Frontend Developer": "Looking for a frontend developer with React, JavaScript, Redux, and API integration experience",
@@ -154,38 +152,33 @@ Return valid JSON only, no markdown fences, with this shape:
 }}
 """.strip()
 
-    body = {
-        "model": os.getenv("GROQ_RESOURCE_MODEL", "llama-3.3-70b-versatile"),
-        "messages": [
-            {"role": "system", "content": "Return concise, structured, valid JSON for a resume improvement UI."},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.35,
-        "response_format": {"type": "json_object"},
-    }
-
-    request = Request(
-        "https://api.groq.com/openai/v1/chat/completions",
-        data=json.dumps(body).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
-    )
+    try:
+        import groq
+    except ImportError as error:
+        raise HTTPException(
+            status_code=500,
+            detail="`groq` package is not installed. Run `pip install groq`.",
+        ) from error
 
     try:
-        with urlopen(request, timeout=45) as response:
-            data = json.loads(response.read().decode("utf-8"))
-    except HTTPError as error:
-        detail = error.read().decode("utf-8", errors="replace")
-        raise HTTPException(status_code=error.code, detail=f"Groq request failed: {detail}") from error
-    except URLError as error:
-        raise HTTPException(status_code=502, detail=f"Groq request failed: {error.reason}") from error
-    except TimeoutError as error:
-        raise HTTPException(status_code=504, detail="Groq request timed out.") from error
+        client = _make_groq_client(groq, api_key)
+        response = client.chat.completions.create(
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Return concise, structured, valid JSON for a resume improvement UI.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            model=os.getenv("GROQ_RESOURCE_MODEL", os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")),
+            temperature=0.35,
+            max_completion_tokens=int(os.getenv("GROQ_RESOURCE_MAX_COMPLETION_TOKENS", os.getenv("GROQ_MAX_COMPLETION_TOKENS", "1200"))),
+            response_format={"type": "json_object"},
+        )
+        content = response.choices[0].message.content or "{}"
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"Groq API request failed. {str(error)}") from error
 
-    content = data.get("choices", [{}])[0].get("message", {}).get("content", "{}")
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
