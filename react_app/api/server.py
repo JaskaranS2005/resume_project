@@ -22,9 +22,9 @@ except ImportError:
 load_dotenv(PROJECT_ROOT / ".env")
 load_dotenv(PROJECT_ROOT / "react_app" / ".env")
 
-from model.model import compute_final_score
+from model.model import compute_final_score, compute_score_breakdown
 from preprocessing.preprocessing_pipeline import build_feature_vector
-from utils.file_extractor import extract_image_text, extract_pdf_text
+from utils.file_extractor import extract_docx_text, extract_image_text, extract_pdf_text
 from utils.llm_helper import _make_groq_client, generate_feedback, chat_with_groq
 
 JOB_OPTIONS = {
@@ -35,7 +35,7 @@ JOB_OPTIONS = {
     "Custom": "",
 }
 
-SUPPORTED_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg"}
+SUPPORTED_SUFFIXES = {".pdf", ".docx", ".png", ".jpg", ".jpeg"}
 RESUME_HINTS = {
     "resume",
     "curriculum vitae",
@@ -101,9 +101,9 @@ app.add_middleware(
 
 
 def get_match_status(score):
-    if score >= 70:
+    if score >= 75:
         return "Strong match"
-    if score >= 50:
+    if score >= 55:
         return "Moderate match"
     return "Weak match"
 
@@ -115,7 +115,7 @@ def validate_resume_text(resume_text):
     hint_count = sum(1 for hint in RESUME_HINTS if hint in lowered)
     has_contact_signal = "@" in text or any(char.isdigit() for char in text)
 
-    if len(words) < 35 or hint_count < 2 or not has_contact_signal:
+    if len(words) < 35 or hint_count < 1 or not has_contact_signal:
         raise HTTPException(status_code=400, detail="Please upload resume only.")
 
 
@@ -270,12 +270,15 @@ async def analyze_resume(
 
         if suffix == ".pdf":
             resume_text = extract_pdf_text(temp_path)
+        elif suffix == ".docx":
+            resume_text = extract_docx_text(temp_path)
         else:
             resume_text = extract_image_text(temp_path)
 
         validate_resume_text(resume_text)
         features = build_feature_vector(resume_text, jd)
         final_score, similarity, depth_gap = compute_final_score(features)
+        score_breakdown = compute_score_breakdown(features)
         feedback = generate_feedback(resume_text, jd, final_score)
 
         return {
@@ -283,6 +286,16 @@ async def analyze_resume(
             "status": get_match_status(final_score),
             "similarity": round(float(similarity), 4),
             "depth_gap": depth_gap,
+            "score_breakdown": score_breakdown,
+            "ats_score": score_breakdown["ats_score"],
+            "skill_coverage": score_breakdown["skill_coverage"],
+            "keyword_coverage": score_breakdown["keyword_coverage"],
+            "evidence_score": score_breakdown["evidence_score"],
+            "matched_skills": features.get("matched_skills", []),
+            "missing_skills": features.get("missing_skills", []),
+            "resume_skills": features.get("resume_skills", []),
+            "jd_skills": features.get("jd_skills", []),
+            "matched_keywords": features.get("matched_keywords", []),
             "resume_signals": features.get("resume_signals", []),
             "jd_signals": features.get("jd_signals", []),
             "feedback": feedback,

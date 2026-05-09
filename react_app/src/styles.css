@@ -1817,18 +1817,10 @@ textarea:focus,
   font-size: 13px;
 }
 
-.resume-skill-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.resume-skill-row span {
-  background: #eee7f7;
-  border: 1px solid #ded0f0;
-  border-radius: 999px;
-  color: #352345;
-  padding: 5px 8px;
+.resume-skill-line {
+  color: #2d2438;
+  font-size: 13px;
+  margin: 0;
 }
 
 .resume-entry {

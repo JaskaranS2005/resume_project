@@ -21,7 +21,6 @@ Author : Resume Analyzer Project
 
 import re
 import unicodedata
-from typing import Optional
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -47,15 +46,6 @@ def step1_lowercase_and_normalise(text: str) -> str:
     text = re.sub(r"[''`]", "'", text)
     text = re.sub(r"[\"\"]", '"', text)
     return text
-
-
-# ─── Demo ───────────────────────────────────────────────────────────────────
-if __name__ == "__main__":
-    raw = "React.js | Nod•e JS — 'Senior' Engíneer"
-    print("STEP 1")
-    print(f"  IN  : {raw}")
-    print(f"  OUT : {step1_lowercase_and_normalise(raw)}\n")
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 2 — PIPE / BULLET DELIMITER → SENTENCE CONVERSION
@@ -92,16 +82,6 @@ def step2_delimiters_to_spaces(text: str) -> str:
         text = text.replace(token, term)
 
     return text
-
-
-if __name__ == "__main__":
-    raw = "react | node.js | mongo | full-stack dev / 3 yrs"
-    s1  = step1_lowercase_and_normalise(raw)
-    s2  = step2_delimiters_to_spaces(s1)
-    print("STEP 2")
-    print(f"  IN  : {s1}")
-    print(f"  OUT : {s2}\n")
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 3 — INFORMAL LANGUAGE & NUMBER-WORD SUBSTITUTION
@@ -179,17 +159,6 @@ def step3_expand_informal(text: str) -> str:
         text = re.sub(pattern, replacement, text)
     return text
 
-
-if __name__ == "__main__":
-    raw = "happy 2 take ic role | 3 yrs exp | py dev | k8s & iac"
-    s1  = step1_lowercase_and_normalise(raw)
-    s2  = step2_delimiters_to_spaces(s1)
-    s3  = step3_expand_informal(s2)
-    print("STEP 3")
-    print(f"  IN  : {s2}")
-    print(f"  OUT : {s3}\n")
-
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 4 — ABBREVIATION EXPANSION (tech-specific)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -239,18 +208,6 @@ def step4_expand_tech_abbreviations(text: str) -> str:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
     return text
 
-
-if __name__ == "__main__":
-    raw = "node.js + pg + tf + sk-learn | react.js | aws | gcp"
-    s1  = step1_lowercase_and_normalise(raw)
-    s2  = step2_delimiters_to_spaces(s1)
-    s3  = step3_expand_informal(s2)
-    s4  = step4_expand_tech_abbreviations(s3)
-    print("STEP 4")
-    print(f"  IN  : {s3}")
-    print(f"  OUT : {s4}\n")
-
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 5 — BROKEN-WORD CORRECTION
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -296,17 +253,6 @@ def step5_fix_broken_words(text: str) -> str:
         text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
     return text
 
-
-if __name__ == "__main__":
-    noisy = "rea ct dev | nod e js | kube rnetes | type script"
-    s1 = step1_lowercase_and_normalise(noisy)
-    s2 = step2_delimiters_to_spaces(s1)
-    s5 = step5_fix_broken_words(s2)
-    print("STEP 5")
-    print(f"  IN  : {s2}")
-    print(f"  OUT : {s5}\n")
-
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 6 — PUNCTUATION & WHITESPACE CLEANUP
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -328,16 +274,6 @@ def step6_clean_punctuation_and_whitespace(text: str) -> str:
     # Collapse whitespace
     text = re.sub(r"\s+", " ", text).strip()
     return text
-
-
-if __name__ == "__main__":
-    messy = "python!!  (3 yrs),,,  expert...   react -- node.js!!  "
-    s1 = step1_lowercase_and_normalise(messy)
-    s6 = step6_clean_punctuation_and_whitespace(s1)
-    print("STEP 6")
-    print(f"  IN  : {s1}")
-    print(f"  OUT : {s6}\n")
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 7 — SKILL NORMALISATION  (integrates v1 skill map)
@@ -370,6 +306,109 @@ SKILL_NORM_MAP = {
     "apache airflow": "airflow",
 }
 
+SKILL_ALIASES = {
+    "react": {"react", "reactjs", "frontend components", "component based"},
+    "javascript": {"javascript", "js", "es6", "ecmascript"},
+    "typescript": {"typescript", "ts"},
+    "html": {"html", "semantic html"},
+    "css": {"css", "scss", "sass", "tailwind", "responsive design", "responsive ui"},
+    "redux": {"redux", "state management", "zustand", "context api"},
+    "nodejs": {"nodejs", "node", "node.js"},
+    "expressjs": {"expressjs", "express", "express.js"},
+    "python": {"python", "py"},
+    "java": {"java", "springboot", "spring boot"},
+    "sql": {"sql", "mysql", "postgresql", "postgres", "database queries"},
+    "mongodb": {"mongodb", "mongo", "nosql"},
+    "rest api": {"rest api", "rest", "api integration", "apis", "http api"},
+    "graphql": {"graphql", "graph ql"},
+    "authentication": {"authentication", "authorization", "auth", "jwt", "oauth", "session"},
+    "testing": {"testing", "unit testing", "integration testing", "jest", "pytest", "selenium", "playwright", "cypress"},
+    "git": {"git", "github", "version control", "pull request", "branching"},
+    "docker": {"docker", "container", "containerization"},
+    "kubernetes": {"kubernetes", "k8s"},
+    "aws": {"aws", "amazon web services", "ec2", "s3", "rds", "lambda"},
+    "gcp": {"gcp", "google cloud platform", "cloud run"},
+    "ci cd": {"ci cd", "cicd", "github actions", "continuous integration", "continuous deployment"},
+    "machine learning": {"machine learning", "ml", "model training", "model evaluation"},
+    "data analysis": {"data analysis", "eda", "exploratory analysis", "analytics", "dashboard"},
+    "pandas": {"pandas"},
+    "numpy": {"numpy"},
+    "sklearn": {"sklearn", "scikit-learn", "scikit learn"},
+    "tensorflow": {"tensorflow", "tf"},
+    "pytorch": {"pytorch", "torch"},
+    "power bi": {"power bi", "powerbi"},
+    "tableau": {"tableau"},
+    "figma": {"figma", "wireframe", "prototype", "design system"},
+}
+
+RESUME_SECTION_TERMS = {
+    "experience", "work experience", "education", "skills", "projects", "certifications",
+    "summary", "objective", "achievements", "contact", "portfolio",
+}
+
+EVIDENCE_TERMS = {
+    "built", "developed", "implemented", "designed", "deployed", "optimized", "improved",
+    "integrated", "automated", "tested", "launched", "reduced", "increased", "created",
+    "managed", "led", "owned", "delivered", "migrated", "debugged", "refactored",
+}
+
+IMPACT_PATTERN = re.compile(
+    r"(\b\d+(\.\d+)?\s*(%|percent|x|k|m|ms|sec|seconds|users|requests|projects|apis|features|hours|days)\b|"
+    r"\b(reduced|increased|improved|optimized|saved|boosted|cut|raised)\b)",
+    flags=re.IGNORECASE,
+)
+
+
+def extract_skills(text: str) -> list[str]:
+    normalised = step7_normalise_skills(step4_expand_tech_abbreviations(step1_lowercase_and_normalise(text or "")))
+    padded = f" {normalised} "
+    found = []
+    for canonical, aliases in SKILL_ALIASES.items():
+        if any(re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", padded) for alias in aliases):
+            found.append(canonical)
+    return sorted(set(found))
+
+
+def extract_role_keywords(clean_text: str) -> list[str]:
+    tokens = [token for token in clean_text.split() if len(token) > 2 and not token.isdigit()]
+    ignored = STOPWORDS | {"developer", "engineer", "intern", "candidate", "experience", "skills", "responsibilities"}
+    keywords = []
+    for token in tokens:
+        if token not in ignored and token not in keywords:
+            keywords.append(token)
+    return keywords[:80]
+
+
+def compute_resume_quality(raw_resume: str) -> dict:
+    text = raw_resume or ""
+    lowered = text.lower()
+    words = re.findall(r"\b[a-zA-Z][a-zA-Z+\-.#]*\b", text)
+    word_count = len(words)
+    section_hits = sorted(section for section in RESUME_SECTION_TERMS if section in lowered)
+    evidence_hits = sorted(term for term in EVIDENCE_TERMS if re.search(rf"\b{re.escape(term)}\b", lowered))
+    impact_hits = IMPACT_PATTERN.findall(text)
+    has_email = bool(re.search(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", text, re.IGNORECASE))
+    has_phone = bool(re.search(r"(?:\+?\d[\s().-]*){9,}\d", text))
+    has_link = bool(re.search(r"(linkedin|github|portfolio|https?://|www\.)", lowered))
+
+    length_score = min(1.0, word_count / 420) if word_count else 0.0
+    section_score = min(1.0, len(section_hits) / 5)
+    contact_score = min(1.0, (int(has_email) + int(has_phone) + int(has_link)) / 2)
+    evidence_score = min(1.0, (len(evidence_hits) / 8) + (len(impact_hits) / 8))
+    ats_score = round((length_score * 0.28) + (section_score * 0.32) + (contact_score * 0.18) + (evidence_score * 0.22), 4)
+
+    return {
+        "word_count": word_count,
+        "section_hits": section_hits,
+        "evidence_terms": evidence_hits,
+        "impact_count": len(impact_hits),
+        "has_email": has_email,
+        "has_phone": has_phone,
+        "has_link": has_link,
+        "ats_score": ats_score,
+        "evidence_score": round(evidence_score, 4),
+    }
+
 def step7_normalise_skills(text: str) -> str:
     """
     Replace skill synonyms and variant spellings with canonical tokens.
@@ -383,15 +422,6 @@ def step7_normalise_skills(text: str) -> str:
         canonical = SKILL_NORM_MAP[variant]
         text = re.sub(rf"\b{re.escape(variant)}\b", canonical, text)
     return text
-
-
-if __name__ == "__main__":
-    raw = "mern developer with scikit-learn and k8s experience"
-    s7  = step7_normalise_skills(raw)
-    print("STEP 7")
-    print(f"  IN  : {raw}")
-    print(f"  OUT : {s7}\n")
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 8 — STOPWORD REMOVAL (lightweight, no NLTK)
@@ -421,15 +451,6 @@ def step8_remove_stopwords(text: str) -> str:
     tokens = text.split()
     filtered = [t for t in tokens if t not in STOPWORDS and len(t) > 1]
     return " ".join(filtered)
-
-
-if __name__ == "__main__":
-    raw = "looking for a react developer with strong node skills and good experience"
-    s8  = step8_remove_stopwords(raw)
-    print("STEP 8")
-    print(f"  IN  : {raw}")
-    print(f"  OUT : {s8}\n")
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 9 — DEPTH-SIGNAL EXTRACTION (returns metadata, not modified text)
@@ -487,15 +508,6 @@ def step9_extract_depth_signals(original_text: str) -> dict:
         "signals_found": found,
     }
 
-
-if __name__ == "__main__":
-    text = "Expert in Python and Scikit-learn. Familiar with Spark. No Airflow experience."
-    meta = step9_extract_depth_signals(text)
-    print("STEP 9 (metadata — does not modify text)")
-    print(f"  IN     : {text}")
-    print(f"  SIGNALS: {meta}\n")
-
-
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 10 — FULL PIPELINE ORCHESTRATOR
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -539,6 +551,14 @@ def build_feature_vector(resume: str, job_desc: str) -> dict:
     """
     clean_resume,  r_meta = preprocess(resume,   return_metadata=True)
     clean_jd,      j_meta = preprocess(job_desc, return_metadata=True)
+    resume_skills = extract_skills(resume)
+    jd_skills = extract_skills(job_desc)
+    matched_skills = sorted(set(resume_skills) & set(jd_skills))
+    missing_skills = sorted(set(jd_skills) - set(resume_skills))
+    resume_keywords = extract_role_keywords(clean_resume)
+    jd_keywords = extract_role_keywords(clean_jd)
+    matched_keywords = sorted(set(resume_keywords) & set(jd_keywords))
+    resume_quality = compute_resume_quality(resume)
 
     return {
         "clean_resume":    clean_resume,
@@ -548,53 +568,12 @@ def build_feature_vector(resume: str, job_desc: str) -> dict:
         "depth_gap":       round(abs(r_meta["depth_score"] - j_meta["depth_score"]), 2),
         "resume_signals":  r_meta["signals_found"],
         "jd_signals":      j_meta["signals_found"],
+        "resume_skills":   resume_skills,
+        "jd_skills":       jd_skills,
+        "matched_skills":  matched_skills,
+        "missing_skills":  missing_skills,
+        "resume_keywords": resume_keywords,
+        "jd_keywords":     jd_keywords,
+        "matched_keywords": matched_keywords,
+        "resume_quality":  resume_quality,
     }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# FULL END-TO-END DEMONSTRATION
-# ═══════════════════════════════════════════════════════════════════════════════
-
-if __name__ == "__main__":
-
-    DIVIDER = "=" * 64
-
-    test_cases = [
-        {
-            "label": "v3 Noisy — broken words + pipes",
-            "resume": "Rea ct dev | 2 yrs | built UI screens | basic Redu x | REST api calls done | no backend",
-            "job":    "React developer for a large-scale fintech SaaS dashboard. Must have strong Redux and performance optimisation.",
-        },
-        {
-            "label": "v3 Keyword stuffing",
-            "resume": "Skills: Python, ML, TensorFlow, PyTorch, Keras, Scikit-learn, NLP, CV, BERT. Experience: 1 yr internship — ran pre-built Jupyter notebooks.",
-            "job":    "ML engineer to own end-to-end model development and deployment. Must build, fine-tune, and ship models to production independently.",
-        },
-        {
-            "label": "v3 Informal + overqualified",
-            "resume": "Principal eng | 10 yrs | distributed sys, AWS arch, K8s at scale, Terraform IaC, Kafka, Go/Python. happy 2 take IC role | open to smaller scope",
-            "job":    "Mid-level DevOps engineer needed. Docker, basic Kubernetes, and one CI/CD tool required. AWS familiarity is a plus.",
-        },
-        {
-            "label": "v3 C++ → Python transferable gap",
-            "resume": "C++ eng | 6 yrs | game-engine dev | mem mgmt, threading, perf tuning. Py — learnt 8 months | 2 personal projects (FastAPI CRUD). no prod Python exp.",
-            "job":    "Python backend engineer for a low-latency trading platform. Requires strong async Python, prod deployment, and concurrency expertise.",
-        },
-    ]
-
-    for case in test_cases:
-        print(DIVIDER)
-        print(f" TEST: {case['label']}")
-        print(DIVIDER)
-
-        fv = build_feature_vector(case["resume"], case["job"])
-
-        print(f"  RAW RESUME   : {case['resume']}")
-        print(f"  CLEAN RESUME : {fv['clean_resume']}")
-        print()
-        print(f"  RAW JD       : {case['job']}")
-        print(f"  CLEAN JD     : {fv['clean_jd']}")
-        print()
-        print(f"  DEPTH SCORE  : resume={fv['resume_depth']}  jd={fv['jd_depth']}  gap={fv['depth_gap']}")
-        print(f"  SIGNALS      : resume={fv['resume_signals']}")
-        print()

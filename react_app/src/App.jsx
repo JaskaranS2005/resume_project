@@ -545,7 +545,7 @@ function inferSkills(text, analysis, selectedRole) {
     "Data Analysis", "FastAPI", "Flask", "Authentication", "Responsive UI",
   ];
   const matched = knownSkills.filter((skill) => source.includes(skill.toLowerCase().replace(".", "")) || source.includes(skill.toLowerCase()));
-  const signals = [...new Set([...(analysis?.resume_signals || []), ...(analysis?.jd_signals || [])])]
+  const signals = [...new Set([...(analysis?.missing_skills || []), ...(analysis?.resume_signals || []), ...(analysis?.jd_signals || [])])]
     .filter((signal) => String(signal).length > 2)
     .slice(0, 8);
   return [...new Set([...matched, ...signals])].slice(0, 18).join(", ");
@@ -1167,20 +1167,25 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
   }
 
   const score = Number(analysis.score || 0);
-  const similarityPercent = Math.round(Number(analysis.similarity || 0) * 100);
+  const breakdown = analysis.score_breakdown || {};
+  const similarityPercent = Math.round(Number(breakdown.semantic_similarity ?? analysis.similarity ?? 0) * 100);
   const depthGap = Number(analysis.depth_gap || 0);
   const resumeSignalCount = new Set(analysis.resume_signals || []).size;
   const jdSignalCount = new Set(analysis.jd_signals || []).size;
   const resumeWords = (analysis.resume_preview || "").trim().split(/\s+/).filter(Boolean).length;
   const depthHealth = Math.max(0, Math.round(100 - depthGap * 25));
-  const signalCoverage = Math.min(100, Math.round(((resumeSignalCount + jdSignalCount) / 8) * 100));
+  const signalCoverage = Math.round(Number(breakdown.skill_coverage ?? analysis.skill_coverage ?? 0) * 100) || Math.min(100, Math.round(((resumeSignalCount + jdSignalCount) / 8) * 100));
+  const keywordCoverage = Math.round(Number(breakdown.keyword_coverage ?? analysis.keyword_coverage ?? 0) * 100);
+  const evidenceScore = Math.round(Number(breakdown.evidence_score ?? analysis.evidence_score ?? 0) * 100);
+  const atsScore = Math.round(Number(breakdown.ats_score ?? analysis.ats_score ?? 0) * 100);
   const readiness = Math.round((score * 0.56) + (similarityPercent * 0.26) + (depthHealth * 0.12) + (signalCoverage * 0.06));
   const chartRows = [
     ["Match score", score],
     ["Semantic fit", similarityPercent],
-    ["Depth health", depthHealth],
-    ["Signal coverage", signalCoverage],
-    ["Resume volume", Math.min(100, Math.round(resumeWords / 12))],
+    ["Skill coverage", signalCoverage],
+    ["Keyword coverage", keywordCoverage],
+    ["Evidence quality", evidenceScore],
+    ["ATS structure", atsScore],
     ["Readiness", readiness],
   ];
   const kpis = [
@@ -1210,19 +1215,19 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
     },
     {
       icon: <Target size={22} />,
-      label: "Signal Coverage",
+      label: "Skill Coverage",
       value: `${signalCoverage}%`,
-      detail: `${resumeSignalCount + jdSignalCount} detected signals`,
+      detail: `${(analysis.matched_skills || []).length} of ${(analysis.jd_skills || []).length || "role"} skills`,
       tone: signalCoverage >= 45 ? "up" : "down",
-      description: "Percentage of key signals from the role template detected in your resume."
+      description: "Required role skills detected in the resume after alias and keyword normalization."
     },
     {
       icon: <FileText size={22} />,
-      label: "Resume Words",
-      value: resumeWords,
-      detail: analysis.resume_file_name || resumeFile?.name || "Extracted preview",
-      tone: resumeWords >= 120 ? "up" : "down",
-      description: "The total number of words successfully extracted from your uploaded resume."
+      label: "ATS Quality",
+      value: `${atsScore}%`,
+      detail: `${resumeWords} extracted words`,
+      tone: atsScore >= 65 ? "up" : "down",
+      description: "Resume structure, contact signals, sections, length, and achievement evidence."
     },
   ];
 
@@ -1360,9 +1365,7 @@ function ResumePreview({ draft }) {
 
       <section>
         <h2>Core Skills</h2>
-        <div className="resume-skill-row">
-          {skills.map((skill) => <span key={skill}>{skill}</span>)}
-        </div>
+        <p className="resume-skill-line">{skills.join(" | ")}</p>
       </section>
 
       <section>
@@ -1520,7 +1523,7 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
     downloadBlob(JSON.stringify(draft, null, 2), `${baseName}-resume.json`, "application/json;charset=utf-8");
   }
 
-  const missingSignals = [...new Set([...(analysis.jd_signals || []), ...(analysis.resume_signals || [])])].slice(0, 10);
+  const missingSignals = [...new Set([...(analysis.missing_skills || []), ...(analysis.jd_signals || []), ...(analysis.resume_signals || [])])].slice(0, 12);
 
   return (
     <main className="resume-editor-page">
@@ -1797,11 +1800,11 @@ function AnalyzerPage({
               <input
                 id="resume-file"
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
+                accept=".pdf,.docx,.png,.jpg,.jpeg"
                 onChange={(event) => onResumeFileChange(event.target.files?.[0] || null)}
               />
               <Upload size={28} />
-              <span>{resumeFile ? resumeFile.name : "Choose PDF, PNG, JPG, or JPEG"}</span>
+              <span>{resumeFile ? resumeFile.name : "Choose PDF, DOCX, PNG, JPG, or JPEG"}</span>
             </div>
             <button className="run-button" disabled={loading} type="submit">
               {loading ? "Analyzing resume..." : "Run analysis"}
@@ -1888,11 +1891,11 @@ function ChatbotPage({
               <input
                 id="chat-resume-file"
                 type="file"
-                accept=".pdf,.png,.jpg,.jpeg"
+                accept=".pdf,.docx,.png,.jpg,.jpeg"
                 onChange={(event) => onResumeFileChange(event.target.files?.[0] || null)}
               />
               <Upload size={26} />
-              <span>{resumeFile ? resumeFile.name : "Choose PDF, PNG, JPG, or JPEG"}</span>
+              <span>{resumeFile ? resumeFile.name : "Choose PDF, DOCX, PNG, JPG, or JPEG"}</span>
             </div>
             <button className="run-button" disabled={preparingChat} type="submit">
               {preparingChat ? "Reading resume..." : hasResumeContext ? "Refresh resume context" : "Start chatbot"}

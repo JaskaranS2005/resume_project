@@ -6,7 +6,7 @@ import streamlit as st
 
 from model.model import compute_final_score
 from preprocessing.preprocessing_pipeline import build_feature_vector
-from utils.file_extractor import extract_image_text, extract_pdf_text
+from utils.file_extractor import extract_docx_text, extract_image_text, extract_pdf_text
 from utils.llm_helper import generate_feedback
 
 
@@ -26,9 +26,9 @@ def sync_jd_from_role():
 
 
 def get_match_status(score):
-    if score >= 70:
+    if score >= 75:
         return "Strong match", "status-strong"
-    if score >= 50:
+    if score >= 55:
         return "Moderate match", "status-moderate"
     return "Weak match", "status-weak"
 
@@ -1059,8 +1059,8 @@ with upload_col:
     )
     uploaded_file = st.file_uploader(
         "Resume file",
-        type=["pdf", "png", "jpg", "jpeg"],
-        help="Supported formats: PDF, PNG, JPG, JPEG",
+        type=["pdf", "docx", "png", "jpg", "jpeg"],
+        help="Supported formats: PDF, DOCX, PNG, JPG, JPEG",
     )
     submitted = st.button("Run analysis", use_container_width=True)
 
@@ -1073,7 +1073,7 @@ if submitted:
     else:
         with st.spinner("Analyzing resume against job description..."):
             ext = os.path.splitext(uploaded_file.name)[1].lower()
-            suffix = ext if ext in {".pdf", ".png", ".jpg", ".jpeg"} else ".pdf"
+            suffix = ext if ext in {".pdf", ".docx", ".png", ".jpg", ".jpeg"} else ".pdf"
 
             temp_path = None
             try:
@@ -1083,6 +1083,8 @@ if submitted:
 
                 if suffix == ".pdf":
                     resume_text = extract_pdf_text(temp_path)
+                elif suffix == ".docx":
+                    resume_text = extract_docx_text(temp_path)
                 else:
                     resume_text = extract_image_text(temp_path)
 

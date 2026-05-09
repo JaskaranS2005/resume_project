@@ -15,6 +15,11 @@ def test_build_feature_vector_contains_expected_keys():
         "depth_gap",
         "resume_signals",
         "jd_signals",
+        "resume_skills",
+        "jd_skills",
+        "matched_skills",
+        "missing_skills",
+        "resume_quality",
     }
     assert expected_keys.issubset(fv.keys())
 
@@ -22,3 +27,13 @@ def test_build_feature_vector_contains_expected_keys():
 def test_depth_gap_is_non_negative():
     fv = build_feature_vector("python developer", "python developer")
     assert fv["depth_gap"] >= 0
+
+
+def test_skill_aliases_are_normalized():
+    fv = build_feature_vector(
+        "Built React.js UI with JS, REST APIs, GitHub, and Jest tests.",
+        "Frontend role needs React, JavaScript, API integration, Git, and testing.",
+    )
+    assert "react" in fv["matched_skills"]
+    assert "javascript" in fv["matched_skills"]
+    assert "testing" in fv["matched_skills"]
