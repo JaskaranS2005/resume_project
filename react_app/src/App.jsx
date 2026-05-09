@@ -1014,9 +1014,10 @@ function ResourceToolPage({ resourceId, analysis, selectedRole, jobDescription }
             role_template: analysis.role_template || selectedRole,
           }),
         });
-        const data = await response.json();
+        let data = {};
+        try { data = await response.json(); } catch (e) {}
         if (!response.ok) {
-          throw new Error(data.detail || "Resource generation failed.");
+          throw new Error(data.detail || "Backend API is not running. Start the backend to continue.");
         }
         if (isActive) setResult(data.result);
       } catch (error) {
@@ -2010,9 +2011,10 @@ function App() {
         method: "POST",
         body: formData,
       });
-      const data = await response.json();
+      let data = {};
+      try { data = await response.json(); } catch (e) {}
       if (!response.ok) {
-        throw new Error(data.detail || "Analysis failed.");
+        throw new Error(data.detail || "Backend API is not running. Run 'npm run api' to start it.");
       }
       const nextAnalysis = {
         ...data,
@@ -2047,9 +2049,10 @@ function App() {
         method: "POST",
         body: formData,
       });
-      const data = await response.json();
+      let data = {};
+      try { data = await response.json(); } catch (e) {}
       if (!response.ok) {
-        throw new Error(data.detail || "Could not read the resume.");
+        throw new Error(data.detail || "Backend API is not running. Run 'npm run api' to start it.");
       }
       const nextAnalysis = {
         ...data,
@@ -2097,9 +2100,10 @@ function App() {
           messages: nextMessages,
         }),
       });
-      const data = await response.json();
+      let data = {};
+      try { data = await response.json(); } catch (e) {}
       if (!response.ok) {
-        throw new Error(data.detail || "Chat request failed.");
+        throw new Error(data.detail || "Backend API is not running. Run 'npm run api' to start it.");
       }
       saveChatMessages([...nextMessages, { role: "assistant", content: data.reply || "I could not generate a reply." }]);
     } catch (error) {
