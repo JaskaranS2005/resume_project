@@ -132,7 +132,7 @@ div {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
     gap: 24px;
-    padding: 34px 0 70px;
+    padding: 30px 0 50px;
 }
 
 a.brand {
@@ -244,7 +244,7 @@ div[data-testid="stMarkdownContainer"] a.hero-cta {
 }
 
 .hero {
-    min-height: 780px;
+    min-height: 700px;
     position: relative;
 }
 
@@ -294,7 +294,7 @@ div[data-testid="stMarkdownContainer"] a.hero-cta {
 }
 
 .floating-chips {
-    min-height: 500px;
+    min-height: 440px;
     position: relative;
 }
 
@@ -342,7 +342,7 @@ div[data-testid="stMarkdownContainer"] a.hero-cta {
 }
 
 .hero-art {
-    bottom: -44px;
+    bottom: -18px;
     max-width: 560px;
     opacity: 0.86;
     position: absolute;
@@ -358,7 +358,7 @@ div[data-testid="stMarkdownContainer"] a.hero-cta {
     border-radius: 26px;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.24);
     color: var(--text);
-    margin: 0 -44px;
+    margin: -42px -44px 36px;
     padding: 56px 44px 28px;
 }
 
@@ -750,6 +750,121 @@ ul[role="listbox"] li[aria-selected="true"] {
     padding: 24px 26px;
 }
 
+.workflow-band {
+    background: #fbfafc;
+    color: var(--paper-text);
+    margin: 0 -46px;
+    padding: 72px 46px 92px;
+}
+
+.workflow-wrap {
+    margin: 0 auto;
+    max-width: 1180px;
+}
+
+.workflow-head {
+    align-items: flex-end;
+    display: flex;
+    gap: 28px;
+    justify-content: space-between;
+    margin-bottom: 34px;
+}
+
+.workflow-head .section-copy {
+    margin: 0;
+    max-width: 470px;
+}
+
+.workflow-chart {
+    background: #ffffff;
+    border: 1px solid #eadcf8;
+    border-radius: 18px;
+    overflow: hidden;
+    padding: 28px;
+}
+
+.workflow-flow {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.workflow-step {
+    background: #fbfafc;
+    border: 1px solid #eadcf8;
+    border-radius: 14px;
+    min-height: 166px;
+    padding: 18px 16px;
+    position: relative;
+}
+
+.workflow-step::after {
+    animation: workflowMove 1.4s linear infinite;
+    background: repeating-linear-gradient(90deg, #813bb2 0 12px, transparent 12px 22px);
+    content: "";
+    height: 4px;
+    left: 100%;
+    position: absolute;
+    top: 42px;
+    width: 18px;
+}
+
+.workflow-step:last-child::after {
+    display: none;
+}
+
+.workflow-dot {
+    align-items: center;
+    animation: workflowPulse 2.4s ease-in-out infinite;
+    background: #eadcf8;
+    border: 2px solid #813bb2;
+    border-radius: 999px;
+    color: #813bb2;
+    display: inline-flex;
+    font-size: 13px;
+    font-weight: 780;
+    height: 48px;
+    justify-content: center;
+    margin-bottom: 18px;
+    width: 48px;
+}
+
+.workflow-step:nth-child(2) .workflow-dot { animation-delay: 0.12s; }
+.workflow-step:nth-child(3) .workflow-dot { animation-delay: 0.24s; }
+.workflow-step:nth-child(4) .workflow-dot { animation-delay: 0.36s; }
+.workflow-step:nth-child(5) .workflow-dot { animation-delay: 0.48s; }
+.workflow-step:nth-child(6) .workflow-dot { animation-delay: 0.6s; }
+
+.workflow-label {
+    color: var(--paper-text);
+    display: block;
+    font-size: 15px;
+    font-weight: 720;
+    margin: 0 0 6px;
+}
+
+.workflow-detail {
+    color: var(--paper-muted);
+    font-size: 13px;
+    line-height: 1.42;
+    margin: 6px 0 0;
+}
+
+@keyframes workflowMove {
+    to {
+        background-position: 22px 0;
+    }
+}
+
+@keyframes workflowPulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.08);
+    }
+}
+
 @media (max-width: 940px) {
     .main .block-container {
         padding: 0 18px 44px;
@@ -791,11 +906,45 @@ ul[role="listbox"] li[aria-selected="true"] {
 
     .matcher-shell,
     .feature-band,
-    .how-band {
+    .how-band,
+    .workflow-band {
         margin-left: -18px;
         margin-right: -18px;
         padding-left: 18px;
         padding-right: 18px;
+    }
+
+    .workflow-head {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .workflow-chart {
+        padding: 18px;
+    }
+
+    .workflow-flow {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-step {
+        min-height: auto;
+        padding-left: 72px;
+    }
+
+    .workflow-dot {
+        left: 16px;
+        margin: 0;
+        position: absolute;
+        top: 18px;
+    }
+
+    .workflow-step::after {
+        background: repeating-linear-gradient(180deg, #813bb2 0 12px, transparent 12px 22px);
+        height: 18px;
+        left: 40px;
+        top: 100%;
+        width: 4px;
     }
 }
 </style>
@@ -814,7 +963,7 @@ st.markdown(
       <a href="#how-it-works">How it works</a>
     </div>
     <div class="nav-actions">
-      <a class="nav-button" href="#contact" style="text-decoration:none !important;">Contact us</a>
+      <a class="nav-button" href="#workflow" style="text-decoration:none !important;">Workflow</a>
       <a class="nav-button light" href="#matcher" style="text-decoration:none !important;">Start <span class="arrow-dot">-></span></a>
     </div>
   </nav>
@@ -1114,6 +1263,54 @@ st.markdown(
       <div class="step-card"><strong>01. Extract text</strong><span>PDF and image resumes are converted into text for analysis.</span></div>
       <div class="step-card"><strong>02. Clean and normalize</strong><span>Resume and job-description text are preprocessed into comparable feature text.</span></div>
       <div class="step-card"><strong>03. Score and explain</strong><span>The local model computes the percentage match, then API feedback explains the gaps.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="workflow-band" id="workflow">
+  <div class="workflow-wrap">
+    <div class="workflow-head">
+      <div>
+        <div class="section-kicker">Workflow</div>
+        <h2 class="section-heading">Animated working flow</h2>
+      </div>
+      <p class="section-copy">
+        A quick view of how the page moves from user input to a scored resume match.
+      </p>
+    </div>
+    <div class="workflow-chart" aria-label="Animated resume matcher workflow">
+      <div class="workflow-flow">
+        <div class="workflow-step">
+          <span class="workflow-dot">01</span>
+          <strong class="workflow-label">Upload resume</strong>
+          <p class="workflow-detail">PDF or image file enters the analyzer.</p>
+        </div>
+        <div class="workflow-step">
+          <span class="workflow-dot">02</span>
+          <strong class="workflow-label">Extract text</strong>
+          <p class="workflow-detail">PyPDF2 or OCR reads the resume content.</p>
+        </div>
+        <div class="workflow-step">
+          <span class="workflow-dot">03</span>
+          <strong class="workflow-label">Preprocess</strong>
+          <p class="workflow-detail">Resume and role text are cleaned and normalized.</p>
+        </div>
+        <div class="workflow-step">
+          <span class="workflow-dot">04</span>
+          <strong class="workflow-label">Compare</strong>
+          <p class="workflow-detail">TF-IDF similarity checks resume against the job.</p>
+        </div>
+        <div class="workflow-step">
+          <span class="workflow-dot">05</span>
+          <strong class="workflow-label">Score match</strong>
+          <p class="workflow-detail">Similarity and depth gap become one match score.</p>
+        </div>
+        <div class="workflow-step">
+          <span class="workflow-dot">06</span>
+          <strong class="workflow-label">Show results</strong>
+          <p class="workflow-detail">Dashboard, signals, and AI feedback appear on page.</p>
+        </div>
+      </div>
     </div>
   </div>
 </section>
