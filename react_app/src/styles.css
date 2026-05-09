@@ -334,20 +334,20 @@ main {
 
 .chip-2 {
   animation: chipHoverTwo 7.8s ease-in-out infinite;
-  right: -14px;
-  top: 212px;
+  right: -18px;
+  top: 190px;
 }
 
 .chip-3 {
   animation: chipHoverThree 8.4s ease-in-out infinite;
-  left: 10px;
-  top: 302px;
+  left: 54px;
+  top: 312px;
 }
 
 .chip-4 {
   animation: chipHoverTwo 8.1s ease-in-out infinite;
-  bottom: 54px;
-  right: 112px;
+  bottom: 68px;
+  right: -4px;
 }
 
 .hero-art {
@@ -355,11 +355,11 @@ main {
   max-width: 500px;
   opacity: 0.86;
   position: absolute;
-  right: 122px;
-  top: 54px;
+  right: 134px;
+  top: -18px;
   transition: transform 260ms ease, opacity 260ms ease;
   transform-origin: 52% 54%;
-  width: min(36vw, 500px);
+  width: min(34vw, 480px);
   z-index: 1;
 }
 

@@ -682,12 +682,12 @@ function HeroArt() {
         <path d="M181 306 L196 321 L222 290" fill="none" stroke="#e8b6ff" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" />
       </g>
       <g className="hero-orbit hero-person hero-person-a">
-        <circle cx="338" cy="184" r="35" fill="rgba(255,255,255,0.72)" />
-        <path d="M302 270 C307 230 368 230 374 270 C360 286 319 286 302 270 Z" fill="rgba(255,255,255,0.62)" />
+        <circle cx="446" cy="266" r="35" fill="rgba(255,255,255,0.72)" />
+        <path d="M410 352 C415 312 476 312 482 352 C468 368 427 368 410 352 Z" fill="rgba(255,255,255,0.62)" />
       </g>
       <g className="hero-orbit hero-person hero-person-b">
-        <circle cx="458" cy="152" r="32" fill="rgba(255,255,255,0.55)" />
-        <path d="M424 236 C430 199 486 199 492 236 C478 251 440 251 424 236 Z" fill="rgba(255,255,255,0.42)" />
+        <circle cx="518" cy="232" r="32" fill="rgba(255,255,255,0.55)" />
+        <path d="M484 316 C490 279 546 279 552 316 C538 331 500 331 484 316 Z" fill="rgba(255,255,255,0.42)" />
       </g>
     </svg>
   );
