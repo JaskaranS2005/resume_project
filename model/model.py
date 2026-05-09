@@ -89,13 +89,18 @@ def compute_score_breakdown(fv: dict) -> dict:
     depth_penalty = min(0.08, max(0.0, depth_gap) * 0.035)
 
     raw_score = (
-        similarity * 0.34
-        + skill_coverage * 0.30
-        + keyword_coverage * 0.16
+        similarity * 0.30
+        + skill_coverage * 0.34
+        + keyword_coverage * 0.17
         + evidence_score * 0.10
-        + ats_score * 0.10
+        + ats_score * 0.09
         - depth_penalty
     )
+    if skill_coverage >= 0.85 and keyword_coverage >= 0.65:
+        raw_score += 0.08
+    elif skill_coverage >= 0.70 and keyword_coverage >= 0.50:
+        raw_score += 0.04
+
     final_score = max(0.0, min(raw_score, 1.0))
 
     return {

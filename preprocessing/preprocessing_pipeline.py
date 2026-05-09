@@ -478,6 +478,44 @@ DEPTH_SIGNALS = {
     "no .+ experience": 0,
 }
 
+DEPTH_SIGNAL_RULES = [
+    (
+        "missing direct experience",
+        0,
+        [
+            r"\bno\s+(direct\s+|production\s+|professional\s+)?[a-z0-9+\-.#\s]{0,28}\s*experience\b",
+            r"\bwithout\s+(direct\s+|production\s+|professional\s+)?[a-z0-9+\-.#\s]{0,28}\s*experience\b",
+            r"\black(s|ing)?\s+[a-z0-9+\-.#\s]{0,28}\s*experience\b",
+        ],
+    ),
+    (
+        "learning/basic exposure",
+        1,
+        [
+            r"\b(basic|beginner|introductory|familiar|learning|exposure to|some knowledge)\b",
+            r"\b(coursework|academic|class project|guided project)\b",
+        ],
+    ),
+    (
+        "hands-on delivery",
+        2,
+        [
+            r"\b(hands-on|practical|solid|comfortable|intermediate)\b",
+            r"\b\d+\+?\s*(years?|yrs?)\s+(of\s+)?(experience|work|development)\b",
+            r"\b(experienced|worked with|built|implemented|integrated|tested|created)\b",
+        ],
+    ),
+    (
+        "advanced production evidence",
+        3,
+        [
+            r"\b(expert|advanced|senior|proficient|extensive|specialized)\b",
+            r"\b(production|deployed|launched|owned|led|architected|optimized|scaled|migrated)\b",
+            r"\b(reduced|increased|improved|saved|boosted)\s+[^.]{0,60}\b\d+",
+        ],
+    ),
+]
+
 def step9_extract_depth_signals(original_text: str) -> dict:
     """
     Scan original (pre-cleaned) text for skill-depth qualifiers.
@@ -488,13 +526,12 @@ def step9_extract_depth_signals(original_text: str) -> dict:
              "signals_found": ["proficient", "familiar"]}
     """
     text_lower = original_text.lower()
-    found      = []
-    scores     = []
+    found = []
+    scores = []
 
-    for signal, score in DEPTH_SIGNALS.items():
-        pattern = rf"\b{signal}\b"
-        if re.search(pattern, text_lower):
-            found.append(signal)
+    for label, score, patterns in DEPTH_SIGNAL_RULES:
+        if any(re.search(pattern, text_lower) for pattern in patterns):
+            found.append(label)
             scores.append(score)
 
     if not scores:

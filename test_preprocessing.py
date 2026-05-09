@@ -37,3 +37,13 @@ def test_skill_aliases_are_normalized():
     assert "react" in fv["matched_skills"]
     assert "javascript" in fv["matched_skills"]
     assert "testing" in fv["matched_skills"]
+
+
+def test_depth_signals_are_normalized_not_raw_adjectives():
+    fv = build_feature_vector(
+        "Experienced frontend developer with 3 years of experience. Built and deployed React dashboards.",
+        "Frontend developer with React delivery experience.",
+    )
+    assert "experienced" not in fv["resume_signals"]
+    assert "hands-on delivery" in fv["resume_signals"]
+    assert "advanced production evidence" in fv["resume_signals"]

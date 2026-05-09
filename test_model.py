@@ -50,7 +50,7 @@ def test_industry_aligned_resume_reaches_strong_range():
     fv = build_feature_vector(resume, jd)
     score, similarity, depth_gap = compute_final_score(fv)
 
-    assert score >= 75
+    assert score >= 85
     assert similarity > 0.35
     assert depth_gap >= 0
 
