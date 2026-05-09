@@ -36,6 +36,23 @@ JOB_OPTIONS = {
 }
 
 SUPPORTED_SUFFIXES = {".pdf", ".png", ".jpg", ".jpeg"}
+RESUME_HINTS = {
+    "resume",
+    "curriculum vitae",
+    "experience",
+    "education",
+    "skills",
+    "projects",
+    "work history",
+    "employment",
+    "internship",
+    "certifications",
+    "linkedin",
+    "github",
+    "portfolio",
+    "objective",
+    "summary",
+}
 
 RESOURCE_TOOLS = {
     "resume-checklist": {
@@ -89,6 +106,17 @@ def get_match_status(score):
     if score >= 50:
         return "Moderate match"
     return "Weak match"
+
+
+def validate_resume_text(resume_text):
+    text = (resume_text or "").strip()
+    words = [word for word in text.replace("\n", " ").split(" ") if word.strip()]
+    lowered = text.lower()
+    hint_count = sum(1 for hint in RESUME_HINTS if hint in lowered)
+    has_contact_signal = "@" in text or any(char.isdigit() for char in text)
+
+    if len(words) < 35 or hint_count < 2 or not has_contact_signal:
+        raise HTTPException(status_code=400, detail="Please upload resume only.")
 
 
 class ResourceRequest(BaseModel):
@@ -227,14 +255,14 @@ async def analyze_resume(
     if suffix not in SUPPORTED_SUFFIXES:
         raise HTTPException(
             status_code=400,
-            detail="Upload a supported resume file: PDF, PNG, JPG, or JPEG.",
+            detail="Please upload resume only.",
         )
 
     temp_path = None
     try:
         contents = await resume.read()
         if not contents:
-            raise HTTPException(status_code=400, detail="Uploaded resume is empty.")
+            raise HTTPException(status_code=400, detail="Please upload resume only.")
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
             temp_file.write(contents)
@@ -245,6 +273,7 @@ async def analyze_resume(
         else:
             resume_text = extract_image_text(temp_path)
 
+        validate_resume_text(resume_text)
         features = build_feature_vector(resume_text, jd)
         final_score, similarity, depth_gap = compute_final_score(features)
         feedback = generate_feedback(resume_text, jd, final_score)

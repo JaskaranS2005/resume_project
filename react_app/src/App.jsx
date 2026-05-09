@@ -502,6 +502,73 @@ function buildReportSections(feedback) {
   return sections.slice(0, 8);
 }
 
+function rememberResourceSource() {
+  const currentRoute = window.location.hash || "#intro";
+  if (!currentRoute.startsWith("#resource-")) {
+    window.sessionStorage.setItem("resume-ai-resource-back", currentRoute);
+  }
+}
+
+function getResourceBackHref() {
+  const stored = window.sessionStorage.getItem("resume-ai-resource-back");
+  return stored && !stored.startsWith("#resource-") ? stored : "#resources";
+}
+
+function InlineFormattedText({ text }) {
+  const parts = String(text || "").split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, index) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={`${part}-${index}`}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
+
+function ChatMessageContent({ content }) {
+  const lines = String(content || "").split("\n");
+  const blocks = [];
+  let bullets = [];
+
+  function flushBullets() {
+    if (bullets.length) {
+      blocks.push(
+        <ul className="chat-message-list" key={`list-${blocks.length}`}>
+          {bullets.map((bullet, index) => (
+            <li key={`${bullet}-${index}`}><InlineFormattedText text={bullet} /></li>
+          ))}
+        </ul>,
+      );
+      bullets = [];
+    }
+  }
+
+  lines.forEach((line, index) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      flushBullets();
+      return;
+    }
+
+    const bullet = trimmed.match(/^[-•]\s+(.+)/);
+    if (bullet) {
+      bullets.push(bullet[1]);
+      return;
+    }
+
+    flushBullets();
+    const heading = trimmed.replace(/\*\*/g, "");
+    if (/^#{1,4}\s+/.test(trimmed) || (trimmed.endsWith(":") && trimmed.length < 70)) {
+      blocks.push(<h4 key={`${trimmed}-${index}`}>{heading.replace(/^#{1,4}\s+/, "").replace(/:$/, "")}</h4>);
+      return;
+    }
+
+    blocks.push(<p key={`${trimmed}-${index}`}><InlineFormattedText text={trimmed} /></p>);
+  });
+
+  flushBullets();
+  return <div className="chat-message-content">{blocks}</div>;
+}
+
 function StructuredFeedback({ feedback }) {
   if (!feedback) return null;
 
@@ -636,7 +703,7 @@ function HeroArt() {
   );
 }
 
-function ResourceNav({ activeLabel = "Resources" }) {
+function ResourceNav({ activeLabel = "Resources", backHref = "#matcher" }) {
   return (
     <nav className="site-nav resource-nav" aria-label="Resource navigation">
       <a className="brand" href="#intro">
@@ -650,7 +717,7 @@ function ResourceNav({ activeLabel = "Resources" }) {
         <a href="#resources">{activeLabel}</a>
       </div>
       <div className="nav-actions">
-        <a className="nav-button light" href="#matcher">
+        <a className="nav-button light" href={backHref}>
           Back <span className="arrow-dot"><ArrowRight size={22} strokeWidth={3} /></span>
         </a>
       </div>
@@ -703,6 +770,7 @@ function ResourcesPage({ analysis }) {
               className={`resource-card ${hasAnalysis ? "" : "locked"}`}
               href={hasAnalysis ? resource.hash : "#matcher"}
               key={resource.title}
+              onClick={hasAnalysis ? rememberResourceSource : undefined}
             >
               <div className="resource-icon">{resource.icon}</div>
               <h2>{resource.title}</h2>
@@ -779,7 +847,7 @@ function ResourceToolPage({ resourceId, analysis, selectedRole, jobDescription }
 
   return (
     <main className="resource-page">
-      <ResourceNav activeLabel={resource.title} />
+      <ResourceNav activeLabel={resource.title} backHref={getResourceBackHref()} />
 
       <section className="resource-shell generated-resource-shell">
         <div className="generated-resource-head">
@@ -1276,7 +1344,7 @@ function ChatbotPage({
               chatMessages.map((chatMessage, index) => (
                 <article className={`chat-bubble ${chatMessage.role === "user" ? "user" : "assistant"}`} key={`${chatMessage.role}-${index}`}>
                   <strong>{chatMessage.role === "user" ? "You" : "Resume AI"}</strong>
-                  <p>{chatMessage.content}</p>
+                  <ChatMessageContent content={chatMessage.content} />
                 </article>
               ))
             ) : (

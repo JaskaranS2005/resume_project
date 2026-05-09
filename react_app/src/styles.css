@@ -1745,6 +1745,36 @@ textarea:focus,
   white-space: pre-wrap;
 }
 
+.chat-message-content {
+  display: grid;
+  gap: 10px;
+}
+
+.chat-message-content h4 {
+  color: #ffffff;
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+.chat-message-content p {
+  margin: 0;
+}
+
+.chat-message-content strong {
+  display: inline;
+  font-size: inherit;
+  margin: 0;
+}
+
+.chat-message-list {
+  color: rgba(255, 255, 255, 0.76);
+  display: grid;
+  gap: 7px;
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 18px;
+}
+
 .chat-empty {
   align-items: center;
   color: rgba(255, 255, 255, 0.62);
