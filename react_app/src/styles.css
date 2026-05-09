@@ -1468,6 +1468,394 @@ textarea:focus,
   margin: 6px 0 0;
 }
 
+.resume-editor-page {
+  min-height: 100vh;
+  padding: 26px clamp(18px, 4vw, 56px) 56px;
+}
+
+.resume-editor-shell {
+  backdrop-filter: blur(34px) saturate(165%);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)),
+    rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 28px;
+  box-shadow: 0 30px 90px rgba(14, 4, 24, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  overflow: hidden;
+  padding: clamp(22px, 3vw, 38px);
+  -webkit-backdrop-filter: blur(34px) saturate(165%);
+}
+
+.resume-editor-head {
+  align-items: flex-start;
+  display: flex;
+  gap: 24px;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.resume-editor-head h1 {
+  color: #ffffff;
+  font-size: clamp(34px, 4vw, 58px);
+  line-height: 1;
+  margin: 0 0 12px;
+}
+
+.resume-editor-head p {
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 17px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 680px;
+}
+
+.resume-downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  max-width: 420px;
+}
+
+.resume-downloads button,
+.editor-add-button,
+.editor-list-head button {
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  gap: 8px;
+}
+
+.resume-downloads button {
+  backdrop-filter: blur(22px) saturate(160%);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 13px;
+  font-weight: 760;
+  padding: 10px 14px;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+}
+
+.resume-downloads button:hover,
+.editor-add-button:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.34);
+  transform: translateY(-2px);
+}
+
+.resume-editor-meta {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 24px;
+}
+
+.resume-editor-meta span {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  padding: 14px 16px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.resume-editor-layout {
+  align-items: start;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: minmax(360px, 0.88fr) minmax(420px, 1.12fr);
+}
+
+.resume-editor-panel,
+.resume-preview-panel {
+  background: rgba(14, 10, 20, 0.32);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 22px;
+  min-width: 0;
+  padding: 18px;
+}
+
+.resume-editor-panel {
+  position: sticky;
+  top: 18px;
+}
+
+.editor-tabs {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.editor-tabs button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.72);
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 760;
+  padding: 12px 10px;
+  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+}
+
+.editor-tabs button:hover,
+.editor-tabs button.active {
+  background: rgba(155, 44, 255, 0.28);
+  border-color: rgba(216, 188, 255, 0.44);
+  color: #ffffff;
+}
+
+.editor-form-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.editor-form-grid label {
+  color: rgba(255, 255, 255, 0.72);
+  display: grid;
+  font-size: 13px;
+  font-weight: 760;
+  gap: 8px;
+}
+
+.editor-form-grid label.wide,
+.editor-signal-box.wide,
+.source-text-preview.wide {
+  grid-column: 1 / -1;
+}
+
+.editor-form-grid input,
+.editor-form-grid textarea {
+  background: rgba(255, 255, 255, 0.93);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: #17121f;
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.45;
+  padding: 12px 13px;
+  resize: vertical;
+}
+
+.editor-form-grid input:focus,
+.editor-form-grid textarea:focus {
+  border-color: rgba(155, 44, 255, 0.8);
+  box-shadow: 0 0 0 3px rgba(155, 44, 255, 0.18);
+  outline: none;
+}
+
+.editor-list {
+  display: grid;
+  gap: 14px;
+}
+
+.editor-list-item {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 14px;
+}
+
+.editor-list-head {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.editor-list-head strong {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.editor-list-head button {
+  background: rgba(255, 255, 255, 0.09);
+  border-radius: 10px;
+  color: rgba(255, 255, 255, 0.7);
+  height: 36px;
+  justify-content: center;
+  padding: 0;
+  width: 36px;
+}
+
+.editor-list-head button:hover {
+  background: rgba(255, 91, 117, 0.18);
+  border-color: rgba(255, 91, 117, 0.42);
+  color: #ffffff;
+}
+
+.editor-add-button {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  color: #ffffff;
+  font-weight: 760;
+  justify-content: center;
+  padding: 13px 16px;
+  transition: background 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.editor-signal-box,
+.source-text-preview {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.editor-signal-box strong,
+.source-text-preview summary {
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 800;
+}
+
+.editor-signal-box div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.editor-signal-box span {
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 13px;
+  padding: 7px 10px;
+}
+
+.source-text-preview pre {
+  color: rgba(255, 255, 255, 0.72);
+  font-family: inherit;
+  line-height: 1.5;
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+
+.resume-preview-panel {
+  background:
+    radial-gradient(circle at 90% 0%, rgba(155, 44, 255, 0.16), transparent 30%),
+    rgba(255, 255, 255, 0.08);
+}
+
+.resume-preview-page {
+  background: #fbf9ff;
+  border-radius: 14px;
+  box-shadow: 0 20px 70px rgba(8, 3, 16, 0.24);
+  color: #1a1424;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.43;
+  margin: 0 auto;
+  max-width: 820px;
+  min-height: 1000px;
+  padding: clamp(26px, 4vw, 54px);
+}
+
+.resume-paper-head {
+  border-bottom: 1px solid rgba(72, 43, 105, 0.24);
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  text-align: center;
+}
+
+.resume-paper-head h1 {
+  color: #160f20;
+  font-size: clamp(30px, 4vw, 46px);
+  letter-spacing: 0;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.resume-paper-head p {
+  color: #6a3c8c;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 800;
+  margin: 6px 0;
+}
+
+.resume-paper-head span {
+  color: #5b5266;
+  display: block;
+  font-size: 12px;
+}
+
+.resume-preview-page section {
+  margin-top: 16px;
+}
+
+.resume-preview-page h2 {
+  border-bottom: 1px solid rgba(72, 43, 105, 0.22);
+  color: #2a173c;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+  padding-bottom: 4px;
+  text-transform: uppercase;
+}
+
+.resume-preview-page h3 {
+  color: #1d1429;
+  font-size: 15px;
+  margin: 0;
+}
+
+.resume-preview-page p,
+.resume-preview-page li,
+.resume-preview-page span {
+  font-size: 13px;
+}
+
+.resume-skill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.resume-skill-row span {
+  background: #eee7f7;
+  border: 1px solid #ded0f0;
+  border-radius: 999px;
+  color: #352345;
+  padding: 5px 8px;
+}
+
+.resume-entry {
+  margin-bottom: 12px;
+}
+
+.resume-entry > div {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.resume-entry span,
+.resume-entry small {
+  color: #61566e;
+}
+
+.resume-entry ul {
+  margin: 6px 0 0 18px;
+  padding: 0;
+}
+
+.resume-entry.compact p {
+  margin: 4px 0 0;
+}
+
 .resource-page {
   min-height: 100vh;
 }

@@ -9,6 +9,7 @@ import {
   Check,
   ChevronDown,
   ClipboardCheck,
+  Download,
   Eye,
   FileText,
   FileSearch,
@@ -16,11 +17,13 @@ import {
   GraduationCap,
   Layers,
   Network,
+  Plus,
   Send,
   Sparkles,
   Target,
   TrendingDown,
   TrendingUp,
+  Trash2,
   Upload,
 } from "lucide-react";
 
@@ -416,6 +419,15 @@ const RESOURCE_TOOLS = [
   },
 ];
 
+const EDITOR_TABS = [
+  { id: "basics", label: "Basics" },
+  { id: "experience", label: "Experience" },
+  { id: "projects", label: "Projects" },
+  { id: "skills", label: "Skills" },
+  { id: "education", label: "Education" },
+  { id: "extras", label: "Extras" },
+];
+
 function loadStoredAnalysis() {
   try {
     const stored = window.localStorage.getItem("resume-ai-latest-analysis");
@@ -500,6 +512,233 @@ function buildReportSections(feedback) {
   }
 
   return sections.slice(0, 8);
+}
+
+function pickLine(lines, matcher) {
+  return lines.find((line) => matcher.test(line)) || "";
+}
+
+function splitResumeLines(text) {
+  return String(text || "")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function inferResumeName(lines, email) {
+  const avoid = /(resume|curriculum|vitae|profile|summary|education|experience|skills|project|objective|contact|phone|email)/i;
+  const candidate = lines.find((line) => {
+    if (line.length > 48 || avoid.test(line) || line.includes("@")) return false;
+    return /^[A-Za-z][A-Za-z .'-]{2,}$/.test(line);
+  });
+  if (candidate) return candidate;
+  return email ? email.split("@")[0].replace(/[._-]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()) : "Candidate Name";
+}
+
+function inferSkills(text, analysis, selectedRole) {
+  const source = `${text} ${(analysis?.resume_signals || []).join(" ")} ${selectedRole}`.toLowerCase();
+  const knownSkills = [
+    "React", "JavaScript", "TypeScript", "HTML", "CSS", "Redux", "Node.js", "Express", "Python", "Java",
+    "SQL", "MongoDB", "PostgreSQL", "REST APIs", "Git", "GitHub", "Docker", "AWS", "Testing", "Selenium",
+    "Playwright", "Cypress", "Postman", "Figma", "Power BI", "Tableau", "Excel", "Machine Learning",
+    "Data Analysis", "FastAPI", "Flask", "Authentication", "Responsive UI",
+  ];
+  const matched = knownSkills.filter((skill) => source.includes(skill.toLowerCase().replace(".", "")) || source.includes(skill.toLowerCase()));
+  const signals = [...new Set([...(analysis?.resume_signals || []), ...(analysis?.jd_signals || [])])]
+    .filter((signal) => String(signal).length > 2)
+    .slice(0, 8);
+  return [...new Set([...matched, ...signals])].slice(0, 18).join(", ");
+}
+
+function makeImprovementBullets(analysis, selectedRole) {
+  const sections = buildReportSections(analysis?.feedback || "");
+  const reportLines = sections.flatMap((section) => section.lines);
+  const usefulLines = reportLines
+    .filter((line) => /(missing|absent|improve|add|project|skill|experience|evidence|deploy|test|api|auth|metric)/i.test(line))
+    .map((line) => line.replace(/\|/g, " ").replace(/\s+/g, " ").slice(0, 150))
+    .slice(0, 4);
+
+  if (usefulLines.length) return usefulLines;
+
+  return [
+    `Add role-specific proof for ${selectedRole}: scope, tools, outcomes, and measurable impact.`,
+    "Turn project work into achievement bullets using action, technical method, and result.",
+    "Include missing keywords only where there is real project, coursework, internship, or work evidence.",
+  ];
+}
+
+function createResumeDraft(analysis, selectedRole, jobDescription) {
+  const resumeText = analysis?.resume_text || analysis?.resume_preview || "";
+  const lines = splitResumeLines(resumeText);
+  const email = (resumeText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [""])[0];
+  const phone = (resumeText.match(/(?:\+?\d[\s().-]*){9,}\d/) || [""])[0].trim();
+  const linkLine = pickLine(lines, /(linkedin|github|portfolio|https?:\/\/|www\.)/i);
+  const name = inferResumeName(lines, email);
+  const title = selectedRole && selectedRole !== "Custom" ? selectedRole : "Target Role Candidate";
+  const summarySource = lines
+    .filter((line) => line !== name && line !== email && line !== phone && line.length > 42)
+    .slice(0, 2)
+    .join(" ");
+  const summary = summarySource || `Impact-focused ${title.toLowerCase()} with project experience aligned to the target role. Presents clear evidence of tools, ownership, collaboration, and measurable outcomes.`;
+  const improvementBullets = makeImprovementBullets(analysis, selectedRole);
+  const jobKeywords = splitResumeLines(jobDescription)
+    .join(" ")
+    .match(/\b[A-Za-z][A-Za-z+#./-]{2,}\b/g)?.slice(0, 14)
+    .join(", ") || "";
+
+  return {
+    basics: {
+      name,
+      title,
+      email,
+      phone,
+      location: "",
+      links: linkLine,
+      summary,
+    },
+    experience: [
+      {
+        role: title,
+        company: "Relevant Experience",
+        period: "Add dates",
+        bullets: improvementBullets.slice(0, 3).join("\n"),
+      },
+    ],
+    projects: [
+      {
+        name: `${title} Proof Project`,
+        stack: inferSkills(resumeText, analysis, selectedRole).split(", ").slice(0, 5).join(", "),
+        bullets: [
+          "Built a role-aligned project that demonstrates the strongest missing requirements from the analysis.",
+          "Documented scope, implementation decisions, testing steps, and measurable outcome for recruiter review.",
+        ].join("\n"),
+      },
+    ],
+    education: [
+      {
+        school: "Institution / University",
+        degree: "Degree, certification, or coursework",
+        period: "Add dates",
+        detail: "Relevant coursework, honors, or training connected to the target role.",
+      },
+    ],
+    skills: inferSkills(resumeText, analysis, selectedRole) || jobKeywords || "Add tools, languages, frameworks, databases, testing, cloud, and soft skills.",
+    extras: {
+      certifications: "",
+      achievements: "",
+      keywords: jobKeywords,
+      sourceText: resumeText.trim(),
+    },
+  };
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function bulletLines(text) {
+  return String(text || "")
+    .split("\n")
+    .map((line) => line.replace(/^[-•]\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function buildResumeDocumentHtml(draft) {
+  const skills = String(draft.skills || "").split(",").map((skill) => skill.trim()).filter(Boolean);
+  const contact = [draft.basics.email, draft.basics.phone, draft.basics.location, draft.basics.links].filter(Boolean).map(escapeHtml).join(" | ");
+  const list = (items) => items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+
+  return `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(draft.basics.name)} Resume</title>
+<style>
+  body { color: #17121f; font-family: Georgia, 'Times New Roman', serif; line-height: 1.42; margin: 38px auto; max-width: 820px; }
+  h1 { font-size: 34px; margin: 0; text-align: center; }
+  .title, .contact { text-align: center; }
+  .title { color: #5b377c; font-size: 15px; font-weight: 700; margin-top: 4px; }
+  .contact { color: #4f485a; font-size: 12px; margin: 8px 0 20px; }
+  h2 { border-bottom: 1px solid #8c79a8; color: #2b183d; font-size: 15px; letter-spacing: .04em; margin: 20px 0 8px; text-transform: uppercase; }
+  h3 { font-size: 14px; margin: 10px 0 2px; }
+  p { margin: 4px 0; }
+  ul { margin: 4px 0 8px 18px; padding: 0; }
+  li { margin: 3px 0; }
+  .meta { color: #675d72; font-size: 12px; }
+  .skills { font-size: 13px; }
+</style>
+</head>
+<body>
+  <h1>${escapeHtml(draft.basics.name)}</h1>
+  <div class="title">${escapeHtml(draft.basics.title)}</div>
+  <div class="contact">${contact}</div>
+  <h2>Professional Summary</h2>
+  <p>${escapeHtml(draft.basics.summary)}</p>
+  <h2>Skills</h2>
+  <p class="skills">${skills.map(escapeHtml).join(" | ")}</p>
+  <h2>Experience</h2>
+  ${draft.experience.map((item) => `<h3>${escapeHtml(item.role)} - ${escapeHtml(item.company)}</h3><p class="meta">${escapeHtml(item.period)}</p><ul>${list(bulletLines(item.bullets))}</ul>`).join("")}
+  <h2>Projects</h2>
+  ${draft.projects.map((item) => `<h3>${escapeHtml(item.name)}</h3><p class="meta">${escapeHtml(item.stack)}</p><ul>${list(bulletLines(item.bullets))}</ul>`).join("")}
+  <h2>Education</h2>
+  ${draft.education.map((item) => `<h3>${escapeHtml(item.degree)} - ${escapeHtml(item.school)}</h3><p class="meta">${escapeHtml(item.period)}</p><p>${escapeHtml(item.detail)}</p>`).join("")}
+  ${draft.extras.certifications ? `<h2>Certifications</h2><p>${escapeHtml(draft.extras.certifications)}</p>` : ""}
+  ${draft.extras.achievements ? `<h2>Achievements</h2><p>${escapeHtml(draft.extras.achievements)}</p>` : ""}
+</body>
+</html>`;
+}
+
+function buildResumePlainText(draft) {
+  const sections = [
+    draft.basics.name,
+    draft.basics.title,
+    [draft.basics.email, draft.basics.phone, draft.basics.location, draft.basics.links].filter(Boolean).join(" | "),
+    "",
+    "PROFESSIONAL SUMMARY",
+    draft.basics.summary,
+    "",
+    "SKILLS",
+    draft.skills,
+    "",
+    "EXPERIENCE",
+    ...draft.experience.flatMap((item) => [
+      `${item.role} - ${item.company}`,
+      item.period,
+      ...bulletLines(item.bullets).map((line) => `- ${line}`),
+      "",
+    ]),
+    "PROJECTS",
+    ...draft.projects.flatMap((item) => [
+      item.name,
+      item.stack,
+      ...bulletLines(item.bullets).map((line) => `- ${line}`),
+      "",
+    ]),
+    "EDUCATION",
+    ...draft.education.flatMap((item) => [`${item.degree} - ${item.school}`, item.period, item.detail, ""]),
+  ];
+  return sections.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function downloadBlob(content, fileName, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
+function slugFileName(value) {
+  return String(value || "resume").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "resume";
 }
 
 function rememberResourceSource() {
@@ -991,6 +1230,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
         <a className="dash-side-link" href="#matcher"><FileSearch size={20} />Analyzer</a>
         <a className="dash-side-link" href="#chat"><Bot size={20} />Chatbot</a>
         <a className="dash-side-link" href="#resources"><BookOpen size={20} />Resources</a>
+        <a className="dash-side-link" href="#resume-editor"><FileText size={20} />Resume editor</a>
         <a className="dash-side-link" href="#dashboard-report"><Brain size={20} />Report</a>
       </aside>
 
@@ -1001,6 +1241,7 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
             <p>{selectedRole} match report generated from the latest resume upload.</p>
           </div>
           <div className="dashboard-actions">
+            <a className="nav-button" href="#resume-editor">Create resume</a>
             <a className="nav-button" href="#chat">Ask chatbot</a>
             <a className="nav-button" href="#matcher">Run another</a>
           </div>
@@ -1095,6 +1336,373 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
         </section>
       </section>
     </main>
+  );
+}
+
+function ResumePreview({ draft }) {
+  const skills = String(draft.skills || "").split(",").map((skill) => skill.trim()).filter(Boolean);
+  return (
+    <article className="resume-preview-page" aria-label="Resume preview">
+      <header className="resume-paper-head">
+        <h1>{draft.basics.name}</h1>
+        <p>{draft.basics.title}</p>
+        <span>{[draft.basics.email, draft.basics.phone, draft.basics.location, draft.basics.links].filter(Boolean).join(" | ")}</span>
+      </header>
+
+      <section>
+        <h2>Professional Summary</h2>
+        <p>{draft.basics.summary}</p>
+      </section>
+
+      <section>
+        <h2>Core Skills</h2>
+        <div className="resume-skill-row">
+          {skills.map((skill) => <span key={skill}>{skill}</span>)}
+        </div>
+      </section>
+
+      <section>
+        <h2>Experience</h2>
+        {draft.experience.map((item, index) => (
+          <div className="resume-entry" key={`${item.role}-${index}`}>
+            <div>
+              <h3>{item.role}</h3>
+              <span>{item.company}</span>
+            </div>
+            <small>{item.period}</small>
+            <ul>
+              {bulletLines(item.bullets).map((line) => <li key={line}>{line}</li>)}
+            </ul>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2>Projects</h2>
+        {draft.projects.map((item, index) => (
+          <div className="resume-entry" key={`${item.name}-${index}`}>
+            <div>
+              <h3>{item.name}</h3>
+              <span>{item.stack}</span>
+            </div>
+            <ul>
+              {bulletLines(item.bullets).map((line) => <li key={line}>{line}</li>)}
+            </ul>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2>Education</h2>
+        {draft.education.map((item, index) => (
+          <div className="resume-entry compact" key={`${item.school}-${index}`}>
+            <div>
+              <h3>{item.degree}</h3>
+              <span>{item.school}</span>
+            </div>
+            <small>{item.period}</small>
+            <p>{item.detail}</p>
+          </div>
+        ))}
+      </section>
+
+      {draft.extras.certifications || draft.extras.achievements ? (
+        <section>
+          <h2>Additional Proof</h2>
+          {draft.extras.certifications ? <p><strong>Certifications:</strong> {draft.extras.certifications}</p> : null}
+          {draft.extras.achievements ? <p><strong>Achievements:</strong> {draft.extras.achievements}</p> : null}
+        </section>
+      ) : null}
+    </article>
+  );
+}
+
+function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
+  const initialDraft = useMemo(
+    () => createResumeDraft(analysis, selectedRole, jobDescription),
+    [analysis, selectedRole, jobDescription],
+  );
+  const [activeTab, setActiveTab] = useState("basics");
+  const [draft, setDraft] = useState(initialDraft);
+
+  useEffect(() => {
+    setDraft(initialDraft);
+  }, [initialDraft]);
+
+  if (!analysis) {
+    return (
+      <main className="dashboard-empty-page">
+        <nav className="site-nav dashboard-nav" aria-label="Resume editor navigation">
+          <a className="brand" href="#intro">
+            <span className="brand-mark">V</span>
+            <span>Resume AI</span>
+          </a>
+          <div className="nav-links">
+            <a href="#matcher">Analyzer</a>
+            <a href="#dashboard">Dashboard</a>
+            <a href="#resources">Resources</a>
+          </div>
+        </nav>
+        <section className="dashboard-empty">
+          <h1>Run an analysis first.</h1>
+          <p>The resume editor needs extracted resume text and match feedback before it can build a stronger draft.</p>
+          <a className="hero-cta" href="#matcher">
+            Upload resume <span className="arrow-dot"><ArrowRight size={22} strokeWidth={3} /></span>
+          </a>
+        </section>
+      </main>
+    );
+  }
+
+  function updateBasics(field, value) {
+    setDraft((current) => ({ ...current, basics: { ...current.basics, [field]: value } }));
+  }
+
+  function updateExtras(field, value) {
+    setDraft((current) => ({ ...current, extras: { ...current.extras, [field]: value } }));
+  }
+
+  function updateList(section, index, field, value) {
+    setDraft((current) => ({
+      ...current,
+      [section]: current[section].map((item, itemIndex) => (
+        itemIndex === index ? { ...item, [field]: value } : item
+      )),
+    }));
+  }
+
+  function addListItem(section) {
+    const blankItems = {
+      experience: { role: "Role title", company: "Company or organization", period: "Dates", bullets: "Add achievement with action, tool, and result." },
+      projects: { name: "Project name", stack: "Tools used", bullets: "Add project scope, implementation, and measurable outcome." },
+      education: { school: "Institution", degree: "Degree or certification", period: "Dates", detail: "Relevant coursework or detail." },
+    };
+    setDraft((current) => ({ ...current, [section]: [...current[section], blankItems[section]] }));
+  }
+
+  function removeListItem(section, index) {
+    setDraft((current) => ({
+      ...current,
+      [section]: current[section].filter((_, itemIndex) => itemIndex !== index),
+    }));
+  }
+
+  function downloadResume(format) {
+    const baseName = slugFileName(draft.basics.name);
+    const html = buildResumeDocumentHtml(draft);
+    if (format === "pdf") {
+      const printWindow = window.open("", "_blank", "noopener,noreferrer");
+      if (!printWindow) return;
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+      return;
+    }
+    if (format === "doc") {
+      downloadBlob(html, `${baseName}-resume.doc`, "application/msword;charset=utf-8");
+      return;
+    }
+    if (format === "html") {
+      downloadBlob(html, `${baseName}-resume.html`, "text/html;charset=utf-8");
+      return;
+    }
+    if (format === "txt") {
+      downloadBlob(buildResumePlainText(draft), `${baseName}-resume.txt`, "text/plain;charset=utf-8");
+      return;
+    }
+    downloadBlob(JSON.stringify(draft, null, 2), `${baseName}-resume.json`, "application/json;charset=utf-8");
+  }
+
+  const missingSignals = [...new Set([...(analysis.jd_signals || []), ...(analysis.resume_signals || [])])].slice(0, 10);
+
+  return (
+    <main className="resume-editor-page">
+      <nav className="site-nav analyzer-nav" aria-label="Resume editor navigation">
+        <a className="brand" href="#intro">
+          <span className="brand-mark">V</span>
+          <span>Resume AI</span>
+        </a>
+        <div className="nav-links">
+          <a href="#dashboard">Dashboard</a>
+          <a href="#resources">Resources</a>
+          <a href="#chat">Chatbot</a>
+        </div>
+        <div className="nav-actions">
+          <a className="nav-button" href="#dashboard">Back to report</a>
+          <a className="nav-button light" href="#matcher">
+            Re-analyze <span className="arrow-dot"><ArrowRight size={22} strokeWidth={3} /></span>
+          </a>
+        </div>
+      </nav>
+
+      <section className="resume-editor-shell">
+        <header className="resume-editor-head">
+          <div>
+            <h1>Resume document editor</h1>
+            <p>Build a recruiter-ready resume from extracted text, match feedback, and the target role.</p>
+          </div>
+          <div className="resume-downloads" aria-label="Download resume formats">
+            {["pdf", "doc", "html", "txt", "json"].map((format) => (
+              <button type="button" key={format} onClick={() => downloadResume(format)}>
+                <Download size={16} /> {format.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        <div className="resume-editor-meta">
+          <span>{analysis.resume_file_name || "Latest resume"}</span>
+          <span>{analysis.role_template || selectedRole}</span>
+          <span>{Number(analysis.score || 0).toFixed(2)}% match</span>
+        </div>
+
+        <div className="resume-editor-layout">
+          <section className="resume-editor-panel">
+            <div className="editor-tabs" role="tablist" aria-label="Resume editor sections">
+              {EDITOR_TABS.map((tab) => (
+                <button
+                  type="button"
+                  key={tab.id}
+                  className={activeTab === tab.id ? "active" : ""}
+                  onClick={() => setActiveTab(tab.id)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            {activeTab === "basics" ? (
+              <div className="editor-form-grid">
+                {[
+                  ["name", "Full name"],
+                  ["title", "Target headline"],
+                  ["email", "Email"],
+                  ["phone", "Phone"],
+                  ["location", "Location"],
+                  ["links", "LinkedIn / GitHub / Portfolio"],
+                ].map(([field, label]) => (
+                  <label key={field}>
+                    {label}
+                    <input value={draft.basics[field]} onChange={(event) => updateBasics(field, event.target.value)} />
+                  </label>
+                ))}
+                <label className="wide">
+                  Professional summary
+                  <textarea rows={5} value={draft.basics.summary} onChange={(event) => updateBasics("summary", event.target.value)} />
+                </label>
+              </div>
+            ) : null}
+
+            {activeTab === "experience" ? (
+              <EditorList
+                items={draft.experience}
+                section="experience"
+                fields={[["role", "Role"], ["company", "Company"], ["period", "Period"], ["bullets", "Achievement bullets"]]}
+                onAdd={addListItem}
+                onRemove={removeListItem}
+                onUpdate={updateList}
+              />
+            ) : null}
+
+            {activeTab === "projects" ? (
+              <EditorList
+                items={draft.projects}
+                section="projects"
+                fields={[["name", "Project name"], ["stack", "Tech stack"], ["bullets", "Project bullets"]]}
+                onAdd={addListItem}
+                onRemove={removeListItem}
+                onUpdate={updateList}
+              />
+            ) : null}
+
+            {activeTab === "skills" ? (
+              <div className="editor-form-grid">
+                <label className="wide">
+                  Skills and keywords
+                  <textarea rows={7} value={draft.skills} onChange={(event) => setDraft((current) => ({ ...current, skills: event.target.value }))} />
+                </label>
+                <div className="editor-signal-box wide">
+                  <strong>Signals to consider</strong>
+                  <div>
+                    {missingSignals.map((signal) => <span key={signal}>{signal}</span>)}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {activeTab === "education" ? (
+              <EditorList
+                items={draft.education}
+                section="education"
+                fields={[["degree", "Degree / certification"], ["school", "Institution"], ["period", "Period"], ["detail", "Relevant detail"]]}
+                onAdd={addListItem}
+                onRemove={removeListItem}
+                onUpdate={updateList}
+              />
+            ) : null}
+
+            {activeTab === "extras" ? (
+              <div className="editor-form-grid">
+                <label className="wide">
+                  Certifications
+                  <textarea rows={3} value={draft.extras.certifications} onChange={(event) => updateExtras("certifications", event.target.value)} />
+                </label>
+                <label className="wide">
+                  Achievements / awards
+                  <textarea rows={3} value={draft.extras.achievements} onChange={(event) => updateExtras("achievements", event.target.value)} />
+                </label>
+                <label className="wide">
+                  Target keywords from job description
+                  <textarea rows={3} value={draft.extras.keywords} onChange={(event) => updateExtras("keywords", event.target.value)} />
+                </label>
+                <details className="source-text-preview wide">
+                  <summary>Extracted resume text used as input</summary>
+                  <pre>{draft.extras.sourceText || "No extracted text available."}</pre>
+                </details>
+              </div>
+            ) : null}
+          </section>
+
+          <aside className="resume-preview-panel">
+            <ResumePreview draft={draft} />
+          </aside>
+        </div>
+      </section>
+    </main>
+  );
+}
+
+function EditorList({ items, section, fields, onAdd, onRemove, onUpdate }) {
+  const addLabel = section === "experience" ? "experience" : section.replace(/s$/, "");
+  return (
+    <div className="editor-list">
+      {items.map((item, index) => (
+        <article className="editor-list-item" key={`${section}-${index}`}>
+          <div className="editor-list-head">
+            <strong>{section.slice(0, 1).toUpperCase() + section.slice(1)} {index + 1}</strong>
+            <button type="button" onClick={() => onRemove(section, index)} aria-label={`Remove ${section} ${index + 1}`}>
+              <Trash2 size={16} />
+            </button>
+          </div>
+          <div className="editor-form-grid">
+            {fields.map(([field, label]) => (
+              <label className={field === "bullets" || field === "detail" ? "wide" : ""} key={field}>
+                {label}
+                {field === "bullets" || field === "detail" ? (
+                  <textarea rows={field === "bullets" ? 5 : 3} value={item[field]} onChange={(event) => onUpdate(section, index, field, event.target.value)} />
+                ) : (
+                  <input value={item[field]} onChange={(event) => onUpdate(section, index, field, event.target.value)} />
+                )}
+              </label>
+            ))}
+          </div>
+        </article>
+      ))}
+      <button className="editor-add-button" type="button" onClick={() => onAdd(section)}>
+        <Plus size={18} /> Add {addLabel}
+      </button>
+    </div>
   );
 }
 
@@ -1194,6 +1802,9 @@ function AnalyzerPage({
             </button>
             <a className="resource-tab" href="#resources">
               Get more resource <ArrowRight size={18} strokeWidth={3} />
+            </a>
+            <a className="resource-tab" href="#resume-editor">
+              Build resume editor <ArrowRight size={18} strokeWidth={3} />
             </a>
             {message ? <div className="notice">{message}</div> : null}
           </section>
@@ -1521,6 +2132,16 @@ function App() {
         selectedRole={selectedRole}
         selectedTemplate={getRoleTemplate(selectedRole)}
         resumeFile={resumeFile}
+      />
+    );
+  }
+
+  if (route === "#resume-editor") {
+    return (
+      <ResumeEditorPage
+        analysis={analysis}
+        selectedRole={selectedRole}
+        jobDescription={jobDescription}
       />
     );
   }
