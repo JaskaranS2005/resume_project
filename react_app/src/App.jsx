@@ -731,10 +731,13 @@ function downloadBlob(content, fileName, type) {
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = fileName;
+  anchor.style.display = "none";
   document.body.appendChild(anchor);
   anchor.click();
-  anchor.remove();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  }, 150);
 }
 
 function slugFileName(value) {
@@ -1492,12 +1495,14 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
     const baseName = slugFileName(draft.basics.name);
     const html = buildResumeDocumentHtml(draft);
     if (format === "pdf") {
-      const printWindow = window.open("", "_blank", "noopener,noreferrer");
+      const printWindow = window.open("", "_blank");
       if (!printWindow) return;
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus();
-      printWindow.print();
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
       return;
     }
     if (format === "doc") {

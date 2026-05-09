@@ -1,3 +1,4 @@
+# Trigger reload for PyPDF2
 try:
     import PyPDF2
 except ImportError:
