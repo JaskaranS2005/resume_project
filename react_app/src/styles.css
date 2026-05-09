@@ -892,9 +892,20 @@ textarea:focus,
   min-height: 48px;
   overflow: hidden;
   position: relative;
-  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, transform 220ms ease;
   width: 100%;
   -webkit-backdrop-filter: blur(26px) saturate(170%);
+}
+
+.resource-tab::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.46), transparent);
+  content: "";
+  inset: -45% auto -45% -28%;
+  pointer-events: none;
+  position: absolute;
+  transform: translateX(-180%) skewX(-18deg);
+  transition: transform 620ms ease;
+  width: 24%;
 }
 
 .resource-tab:hover {
@@ -906,9 +917,21 @@ textarea:focus,
   transform: translateY(-2px);
 }
 
+.resource-tab:hover::after {
+  transform: translateX(620%) skewX(-18deg);
+}
+
+.resource-tab:hover svg {
+  transform: translateX(4px);
+}
+
 .resource-tab > * {
   position: relative;
   z-index: 1;
+}
+
+.resource-tab svg {
+  transition: transform 220ms ease;
 }
 
 .notice {
@@ -1604,15 +1627,57 @@ textarea:focus,
   font: inherit;
   font-size: 14px;
   font-weight: 760;
+  overflow: hidden;
   padding: 12px 10px;
-  transition: background 180ms ease, border-color 180ms ease, color 180ms ease;
+  position: relative;
+  transition: background 220ms ease, border-color 220ms ease, box-shadow 220ms ease, color 220ms ease, transform 220ms ease;
+}
+
+.editor-tabs button::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.32), transparent);
+  content: "";
+  inset: 0;
+  opacity: 0;
+  position: absolute;
+  transform: translateX(-110%);
+  transition: opacity 180ms ease, transform 520ms ease;
+}
+
+.editor-tabs button::after {
+  background: #d8bcff;
+  border-radius: 999px;
+  bottom: 5px;
+  box-shadow: 0 0 16px rgba(192, 132, 252, 0.64);
+  content: "";
+  height: 3px;
+  left: 18px;
+  opacity: 0;
+  position: absolute;
+  right: 18px;
+  transform: scaleX(0.28);
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+
+.editor-tabs button:hover {
+  transform: translateY(-2px);
+}
+
+.editor-tabs button:hover::before {
+  opacity: 1;
+  transform: translateX(110%);
 }
 
 .editor-tabs button:hover,
 .editor-tabs button.active {
   background: rgba(155, 44, 255, 0.28);
   border-color: rgba(216, 188, 255, 0.44);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 12px 28px rgba(155, 44, 255, 0.14);
   color: #ffffff;
+}
+
+.editor-tabs button.active::after {
+  opacity: 1;
+  transform: scaleX(1);
 }
 
 .editor-form-grid {
