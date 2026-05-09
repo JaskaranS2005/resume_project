@@ -341,12 +341,12 @@ main {
 .chip-3 {
   animation: chipHoverThree 8.4s ease-in-out infinite;
   left: 10px;
-  top: 340px;
+  top: 302px;
 }
 
 .chip-4 {
   animation: chipHoverTwo 8.1s ease-in-out infinite;
-  bottom: 6px;
+  bottom: 54px;
   right: 112px;
 }
 
@@ -356,7 +356,7 @@ main {
   opacity: 0.86;
   position: absolute;
   right: 122px;
-  top: 118px;
+  top: 54px;
   transition: transform 260ms ease, opacity 260ms ease;
   transform-origin: 52% 54%;
   width: min(36vw, 500px);

@@ -673,16 +673,6 @@ function HeroArt() {
           </feMerge>
         </filter>
       </defs>
-      <path
-        className="hero-ribbon"
-        d="M70 342 C142 280 199 312 264 348 C344 391 427 378 520 314"
-        fill="none"
-        stroke="#9b2cff"
-        strokeWidth="24"
-        strokeLinecap="round"
-        opacity="0.5"
-        filter="url(#glow)"
-      />
       <g className="hero-orbit hero-resume">
         <rect x="92" y="88" width="160" height="210" rx="34" fill="rgba(255,255,255,0.09)" stroke="rgba(255,255,255,0.25)" />
         <rect x="126" y="124" width="92" height="128" rx="18" fill="url(#portal)" opacity="0.9" />
