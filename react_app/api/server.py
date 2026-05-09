@@ -119,6 +119,69 @@ def validate_resume_text(resume_text):
         raise HTTPException(status_code=400, detail="Please upload resume only.")
 
 
+def normalize_resource_result(parsed, tool_title):
+    if not isinstance(parsed, dict):
+        parsed = {}
+
+    summary = str(parsed.get("summary") or "").strip()
+    if not summary:
+        summary = f"{tool_title} generated from the latest resume analysis."
+
+    sections = parsed.get("sections")
+    if not isinstance(sections, list) or not sections:
+        sections = [
+            {
+                "title": tool_title,
+                "items": [
+                    {
+                        "label": "Review result",
+                        "detail": "The model response did not include structured sections. Re-run this resource or use the dashboard report as the source.",
+                        "priority": "Medium",
+                    }
+                ],
+            }
+        ]
+
+    normalized_sections = []
+    for section in sections:
+        if not isinstance(section, dict):
+            continue
+        title = str(section.get("title") or "Recommendation").strip()
+        raw_items = section.get("items")
+        if not isinstance(raw_items, list) or not raw_items:
+            raw_items = [{"label": title, "detail": str(section.get("detail") or summary), "priority": "Medium"}]
+        items = []
+        for item in raw_items:
+            if isinstance(item, dict):
+                items.append(
+                    {
+                        "label": str(item.get("label") or "Action").strip(),
+                        "detail": str(item.get("detail") or item.get("text") or "Review and apply this recommendation.").strip(),
+                        "priority": str(item.get("priority") or "Medium").strip(),
+                    }
+                )
+            elif str(item).strip():
+                items.append({"label": "Action", "detail": str(item).strip(), "priority": "Medium"})
+        normalized_sections.append({"title": title, "items": items})
+
+    next_steps = parsed.get("next_steps")
+    if not isinstance(next_steps, list):
+        next_steps = []
+    next_steps = [str(step).strip() for step in next_steps if str(step).strip()]
+    if not next_steps:
+        next_steps = [
+            "Apply the highest-priority recommendation.",
+            "Update the resume draft in the editor.",
+            "Run the analyzer again and compare the score.",
+        ]
+
+    return {
+        "summary": summary,
+        "sections": normalized_sections,
+        "next_steps": next_steps[:5],
+    }
+
+
 class ResourceRequest(BaseModel):
     analysis: dict
     job_description: str | None = None
@@ -223,7 +286,7 @@ Return valid JSON only, no markdown fences, with this shape:
 
     return {
         "resource": tool["title"],
-        "result": parsed,
+        "result": normalize_resource_result(parsed, tool["title"]),
     }
 
 
