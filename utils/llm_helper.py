@@ -255,15 +255,16 @@ def chat_with_groq(resume_text, jd, messages):
         client = _make_groq_client(groq, api_key)
         model = os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct")
         
-        system_prompt = f"""You are a helpful and expert career assistant. 
-You are having a conversation with a candidate about their resume and career.
+        system_prompt = f"""You are a helpful assistant inside this Resume Matcher application.
+Use the provided resume and target job description when they are relevant, but answer the user's question naturally instead of refusing unrelated topics.
+
 Here is their parsed resume:
 {(resume_text or '')[:2500]}
 
 Here is the target job description or role template they are comparing against:
 {(jd or '')[:1500]}
 
-Please provide concise, actionable, and specific advice based on the provided resume and job description. Answer their questions directly. Use markdown for formatting."""
+Provide concise, actionable answers. For resume, job-search, or career questions, ground your advice in the provided resume and job description. Use markdown for formatting."""
 
         api_messages = [{"role": "system", "content": system_prompt}]
         for msg in messages:

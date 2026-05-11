@@ -13,6 +13,7 @@ import {
   Eye,
   FileText,
   FileSearch,
+  FileDown,
   Gauge,
   GraduationCap,
   Layers,
@@ -428,6 +429,17 @@ const EDITOR_TABS = [
   { id: "extras", label: "Extras" },
 ];
 
+const CAREER_LEVELS = ["Fresher / Intern", "Mid-level", "Career changer", "Senior", "Executive"];
+const MARKETS = ["US / UK", "Middle East / Asia", "Germany", "Global"];
+
+const EDITOR_STANDARDS = [
+  "Collect name, contact, target role, industry, experience, education, skills, work history, certifications, achievements, and job description.",
+  "Use ATS-safe headings: Professional Summary, Experience, Education, Skills, Projects, Certifications, Achievements.",
+  "Keep bullets action-led with context, action, and result. Quantify only when true.",
+  "Avoid tables, columns, graphics, headers, footers, pronouns, generic duties, and inconsistent tense.",
+  "Use 1 page for 0-5 years and up to 2 pages for 5+ years unless the market expects a longer CV.",
+];
+
 function loadStoredAnalysis() {
   try {
     const stored = window.localStorage.getItem("resume-ai-latest-analysis");
@@ -595,6 +607,10 @@ function createResumeDraft(analysis, selectedRole, jobDescription) {
       phone,
       location: "",
       links: linkLine,
+      targetIndustry: "",
+      yearsExperience: "",
+      careerLevel: title.toLowerCase().includes("intern") ? "Fresher / Intern" : "Mid-level",
+      market: "US / UK",
       summary,
     },
     experience: [
@@ -633,6 +649,30 @@ function createResumeDraft(analysis, selectedRole, jobDescription) {
   };
 }
 
+function getResumeSectionOrder(draft) {
+  const level = String(draft.basics?.careerLevel || "").toLowerCase();
+  if (level.includes("fresher") || level.includes("intern")) {
+    return ["summary", "education", "skills", "projects", "experience", "extras"];
+  }
+  if (level.includes("changer")) {
+    return ["summary", "skills", "experience", "projects", "education", "extras"];
+  }
+  if (level.includes("executive") || level.includes("senior")) {
+    return ["summary", "skills", "experience", "projects", "education", "extras"];
+  }
+  return ["summary", "experience", "skills", "projects", "education", "extras"];
+}
+
+function getProfileOrderLabel(draft) {
+  return getResumeSectionOrder(draft)
+    .map((section) => {
+      if (section === "summary") return "Professional Summary";
+      if (section === "extras") return "Certifications / Achievements";
+      return section.slice(0, 1).toUpperCase() + section.slice(1);
+    })
+    .join(" -> ");
+}
+
 function escapeHtml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -652,6 +692,14 @@ function buildResumeDocumentHtml(draft) {
   const skills = String(draft.skills || "").split(",").map((skill) => skill.trim()).filter(Boolean);
   const contact = [draft.basics.email, draft.basics.phone, draft.basics.location, draft.basics.links].filter(Boolean).map(escapeHtml).join(" | ");
   const list = (items) => items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+  const sections = {
+    summary: `<h2>Professional Summary</h2><p>${escapeHtml(draft.basics.summary)}</p>`,
+    skills: `<h2>Skills</h2><p class="skills">${skills.map(escapeHtml).join(" | ")}</p>`,
+    experience: `<h2>Experience</h2>${draft.experience.map((item) => `<h3>${escapeHtml(item.role)} - ${escapeHtml(item.company)}</h3><p class="meta">${escapeHtml(item.period)}</p><ul>${list(bulletLines(item.bullets))}</ul>`).join("")}`,
+    projects: `<h2>Projects</h2>${draft.projects.map((item) => `<h3>${escapeHtml(item.name)}</h3><p class="meta">${escapeHtml(item.stack)}</p><ul>${list(bulletLines(item.bullets))}</ul>`).join("")}`,
+    education: `<h2>Education</h2>${draft.education.map((item) => `<h3>${escapeHtml(item.degree)} - ${escapeHtml(item.school)}</h3><p class="meta">${escapeHtml(item.period)}</p><p>${escapeHtml(item.detail)}</p>`).join("")}`,
+    extras: `${draft.extras.certifications ? `<h2>Certifications</h2><p>${escapeHtml(draft.extras.certifications)}</p>` : ""}${draft.extras.achievements ? `<h2>Achievements</h2><p>${escapeHtml(draft.extras.achievements)}</p>` : ""}`,
+  };
 
   return `<!doctype html>
 <html>
@@ -659,13 +707,13 @@ function buildResumeDocumentHtml(draft) {
 <meta charset="utf-8">
 <title>${escapeHtml(draft.basics.name)} Resume</title>
 <style>
-  body { color: #17121f; font-family: Georgia, 'Times New Roman', serif; line-height: 1.42; margin: 38px auto; max-width: 820px; }
-  h1 { font-size: 34px; margin: 0; text-align: center; }
+  body { color: #17121f; font-family: Calibri, Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.36; margin: 38px auto; max-width: 820px; }
+  h1 { font-size: 22pt; margin: 0; text-align: center; }
   .title, .contact { text-align: center; }
   .title { color: #5b377c; font-size: 15px; font-weight: 700; margin-top: 4px; }
   .contact { color: #4f485a; font-size: 12px; margin: 8px 0 20px; }
-  h2 { border-bottom: 1px solid #8c79a8; color: #2b183d; font-size: 15px; letter-spacing: .04em; margin: 20px 0 8px; text-transform: uppercase; }
-  h3 { font-size: 14px; margin: 10px 0 2px; }
+  h2 { border-bottom: 1px solid #8c79a8; color: #2b183d; font-size: 12pt; letter-spacing: 0; margin: 18px 0 8px; }
+  h3 { font-size: 11pt; margin: 10px 0 2px; }
   p { margin: 4px 0; }
   ul { margin: 4px 0 8px 18px; padding: 0; }
   li { margin: 3px 0; }
@@ -677,50 +725,49 @@ function buildResumeDocumentHtml(draft) {
   <h1>${escapeHtml(draft.basics.name)}</h1>
   <div class="title">${escapeHtml(draft.basics.title)}</div>
   <div class="contact">${contact}</div>
-  <h2>Professional Summary</h2>
-  <p>${escapeHtml(draft.basics.summary)}</p>
-  <h2>Skills</h2>
-  <p class="skills">${skills.map(escapeHtml).join(" | ")}</p>
-  <h2>Experience</h2>
-  ${draft.experience.map((item) => `<h3>${escapeHtml(item.role)} - ${escapeHtml(item.company)}</h3><p class="meta">${escapeHtml(item.period)}</p><ul>${list(bulletLines(item.bullets))}</ul>`).join("")}
-  <h2>Projects</h2>
-  ${draft.projects.map((item) => `<h3>${escapeHtml(item.name)}</h3><p class="meta">${escapeHtml(item.stack)}</p><ul>${list(bulletLines(item.bullets))}</ul>`).join("")}
-  <h2>Education</h2>
-  ${draft.education.map((item) => `<h3>${escapeHtml(item.degree)} - ${escapeHtml(item.school)}</h3><p class="meta">${escapeHtml(item.period)}</p><p>${escapeHtml(item.detail)}</p>`).join("")}
-  ${draft.extras.certifications ? `<h2>Certifications</h2><p>${escapeHtml(draft.extras.certifications)}</p>` : ""}
-  ${draft.extras.achievements ? `<h2>Achievements</h2><p>${escapeHtml(draft.extras.achievements)}</p>` : ""}
+  ${getResumeSectionOrder(draft).map((section) => sections[section]).join("")}
 </body>
 </html>`;
 }
 
 function buildResumePlainText(draft) {
+  const blocks = {
+    summary: ["Professional Summary", draft.basics.summary, ""],
+    skills: ["Skills", draft.skills, ""],
+    experience: [
+      "Experience",
+      ...draft.experience.flatMap((item) => [
+        `${item.role} - ${item.company}`,
+        item.period,
+        ...bulletLines(item.bullets).map((line) => `- ${line}`),
+        "",
+      ]),
+    ],
+    projects: [
+      "Projects",
+      ...draft.projects.flatMap((item) => [
+        item.name,
+        item.stack,
+        ...bulletLines(item.bullets).map((line) => `- ${line}`),
+        "",
+      ]),
+    ],
+    education: [
+      "Education",
+      ...draft.education.flatMap((item) => [`${item.degree} - ${item.school}`, item.period, item.detail, ""]),
+    ],
+    extras: [
+      ...(draft.extras.certifications ? ["Certifications", draft.extras.certifications, ""] : []),
+      ...(draft.extras.achievements ? ["Achievements", draft.extras.achievements, ""] : []),
+    ],
+  };
+
   const sections = [
     draft.basics.name,
     draft.basics.title,
     [draft.basics.email, draft.basics.phone, draft.basics.location, draft.basics.links].filter(Boolean).join(" | "),
     "",
-    "PROFESSIONAL SUMMARY",
-    draft.basics.summary,
-    "",
-    "SKILLS",
-    draft.skills,
-    "",
-    "EXPERIENCE",
-    ...draft.experience.flatMap((item) => [
-      `${item.role} - ${item.company}`,
-      item.period,
-      ...bulletLines(item.bullets).map((line) => `- ${line}`),
-      "",
-    ]),
-    "PROJECTS",
-    ...draft.projects.flatMap((item) => [
-      item.name,
-      item.stack,
-      ...bulletLines(item.bullets).map((line) => `- ${line}`),
-      "",
-    ]),
-    "EDUCATION",
-    ...draft.education.flatMap((item) => [`${item.degree} - ${item.school}`, item.period, item.detail, ""]),
+    ...getResumeSectionOrder(draft).flatMap((section) => blocks[section] || []),
   ];
   return sections.join("\n").replace(/\n{3,}/g, "\n\n").trim();
 }
@@ -1350,25 +1397,21 @@ function DashboardPage({ analysis, selectedRole, selectedTemplate, resumeFile })
 
 function ResumePreview({ draft }) {
   const skills = String(draft.skills || "").split(",").map((skill) => skill.trim()).filter(Boolean);
-  return (
-    <article className="resume-preview-page" aria-label="Resume preview">
-      <header className="resume-paper-head">
-        <h1>{draft.basics.name}</h1>
-        <p>{draft.basics.title}</p>
-        <span>{[draft.basics.email, draft.basics.phone, draft.basics.location, draft.basics.links].filter(Boolean).join(" | ")}</span>
-      </header>
-
-      <section>
+  const sections = {
+    summary: (
+      <section key="summary">
         <h2>Professional Summary</h2>
         <p>{draft.basics.summary}</p>
       </section>
-
-      <section>
-        <h2>Core Skills</h2>
+    ),
+    skills: (
+      <section key="skills">
+        <h2>Skills</h2>
         <p className="resume-skill-line">{skills.join(" | ")}</p>
       </section>
-
-      <section>
+    ),
+    experience: (
+      <section key="experience">
         <h2>Experience</h2>
         {draft.experience.map((item, index) => (
           <div className="resume-entry" key={`${item.role}-${index}`}>
@@ -1383,8 +1426,9 @@ function ResumePreview({ draft }) {
           </div>
         ))}
       </section>
-
-      <section>
+    ),
+    projects: (
+      <section key="projects">
         <h2>Projects</h2>
         {draft.projects.map((item, index) => (
           <div className="resume-entry" key={`${item.name}-${index}`}>
@@ -1398,8 +1442,9 @@ function ResumePreview({ draft }) {
           </div>
         ))}
       </section>
-
-      <section>
+    ),
+    education: (
+      <section key="education">
         <h2>Education</h2>
         {draft.education.map((item, index) => (
           <div className="resume-entry compact" key={`${item.school}-${index}`}>
@@ -1412,14 +1457,25 @@ function ResumePreview({ draft }) {
           </div>
         ))}
       </section>
+    ),
+    extras: draft.extras.certifications || draft.extras.achievements ? (
+      <section key="extras">
+        <h2>Certifications / Achievements</h2>
+        {draft.extras.certifications ? <p><strong>Certifications:</strong> {draft.extras.certifications}</p> : null}
+        {draft.extras.achievements ? <p><strong>Achievements:</strong> {draft.extras.achievements}</p> : null}
+      </section>
+    ) : null,
+  };
 
-      {draft.extras.certifications || draft.extras.achievements ? (
-        <section>
-          <h2>Additional Proof</h2>
-          {draft.extras.certifications ? <p><strong>Certifications:</strong> {draft.extras.certifications}</p> : null}
-          {draft.extras.achievements ? <p><strong>Achievements:</strong> {draft.extras.achievements}</p> : null}
-        </section>
-      ) : null}
+  return (
+    <article className="resume-preview-page" aria-label="Resume preview">
+      <header className="resume-paper-head">
+        <h1>{draft.basics.name}</h1>
+        <p>{draft.basics.title}</p>
+        <span>{[draft.basics.email, draft.basics.phone, draft.basics.location, draft.basics.links].filter(Boolean).join(" | ")}</span>
+      </header>
+
+      {getResumeSectionOrder(draft).map((section) => sections[section])}
     </article>
   );
 }
@@ -1431,6 +1487,8 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
   );
   const [activeTab, setActiveTab] = useState("basics");
   const [draft, setDraft] = useState(initialDraft);
+  const [enhancingField, setEnhancingField] = useState("");
+  const [editorStatus, setEditorStatus] = useState("");
 
   useEffect(() => {
     setDraft(initialDraft);
@@ -1494,7 +1552,47 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
     }));
   }
 
-  function downloadResume(format) {
+  async function improveText(fieldKey, label, value, applyValue) {
+    const currentText = String(value || "").trim();
+    if (!currentText) {
+      setEditorStatus(`Add ${label.toLowerCase()} text before generating an improved version.`);
+      return;
+    }
+
+    setEnhancingField(fieldKey);
+    setEditorStatus(`Generating stronger ${label.toLowerCase()}...`);
+    try {
+      const response = await fetch("/api/resume/enhance-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: currentText,
+          field: label,
+          context: {
+            target_role: draft.basics.title,
+            target_industry: draft.basics.targetIndustry,
+            years_experience: draft.basics.yearsExperience,
+            career_level: draft.basics.careerLevel,
+            market: draft.basics.market,
+            keywords: draft.extras.keywords,
+          },
+        }),
+      });
+      let data = {};
+      try { data = await response.json(); } catch (error) {}
+      if (!response.ok) {
+        throw new Error(data.detail || "Could not generate improved text.");
+      }
+      applyValue(data.text || currentText);
+      setEditorStatus("Generated improved resume text with the configured API key.");
+    } catch (error) {
+      setEditorStatus(error.message);
+    } finally {
+      setEnhancingField("");
+    }
+  }
+
+  async function downloadResume(format) {
     const baseName = slugFileName(draft.basics.name);
     const html = buildResumeDocumentHtml(draft);
     if (format === "pdf") {
@@ -1506,21 +1604,44 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
       setTimeout(() => {
         printWindow.print();
       }, 250);
+      setEditorStatus("PDF opened in the browser print dialog. Choose Save as PDF to download.");
       return;
     }
-    if (format === "doc") {
-      downloadBlob(html, `${baseName}-resume.doc`, "application/msword;charset=utf-8");
+    if (["docx", "txt", "json"].includes(format)) {
+      setEditorStatus(`Preparing ${format.toUpperCase()} download...`);
+      try {
+        const response = await fetch("/api/resume/export", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ draft, format }),
+        });
+        if (!response.ok) {
+          let data = {};
+          try { data = await response.json(); } catch (error) {}
+          throw new Error(data.detail || "Export failed.");
+        }
+        const blob = await response.blob();
+        const type = response.headers.get("content-type") || blob.type || "application/octet-stream";
+        downloadBlob(blob, `${baseName}-resume.${format}`, type);
+        setEditorStatus(`${format.toUpperCase()} download started.`);
+      } catch (error) {
+        if (format === "txt") {
+          downloadBlob(buildResumePlainText(draft), `${baseName}-resume.txt`, "text/plain;charset=utf-8");
+          setEditorStatus("TXT download started with browser fallback.");
+        } else if (format === "json") {
+          downloadBlob(JSON.stringify(draft, null, 2), `${baseName}-resume.json`, "application/json;charset=utf-8");
+          setEditorStatus("JSON download started with browser fallback.");
+        } else {
+          setEditorStatus(`DOCX export needs the backend API running. ${error.message}`);
+        }
+      }
       return;
     }
     if (format === "html") {
       downloadBlob(html, `${baseName}-resume.html`, "text/html;charset=utf-8");
+      setEditorStatus("HTML download started.");
       return;
     }
-    if (format === "txt") {
-      downloadBlob(buildResumePlainText(draft), `${baseName}-resume.txt`, "text/plain;charset=utf-8");
-      return;
-    }
-    downloadBlob(JSON.stringify(draft, null, 2), `${baseName}-resume.json`, "application/json;charset=utf-8");
   }
 
   const missingSignals = [...new Set([...(analysis.missing_skills || []), ...(analysis.jd_signals || []), ...(analysis.resume_signals || [])])].slice(0, 12);
@@ -1552,9 +1673,9 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
             <p>Build a recruiter-ready resume from extracted text, match feedback, and the target role.</p>
           </div>
           <div className="resume-downloads" aria-label="Download resume formats">
-            {["pdf", "doc", "html", "txt", "json"].map((format) => (
+            {["docx", "pdf", "txt", "html", "json"].map((format) => (
               <button type="button" key={format} onClick={() => downloadResume(format)}>
-                <Download size={16} /> {format.toUpperCase()}
+                {format === "docx" ? <FileDown size={16} /> : <Download size={16} />} {format.toUpperCase()}
               </button>
             ))}
           </div>
@@ -1565,6 +1686,22 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
           <span>{analysis.role_template || selectedRole}</span>
           <span>{Number(analysis.score || 0).toFixed(2)}% match</span>
         </div>
+
+        <div className="resume-editor-guidance">
+          <section>
+            <h2>Editor standards</h2>
+            <ul>
+              {EDITOR_STANDARDS.map((standard) => <li key={standard}>{standard}</li>)}
+            </ul>
+          </section>
+          <section>
+            <h2>Current structure</h2>
+            <p>{getProfileOrderLabel(draft)}</p>
+            <p>{draft.basics.market === "US / UK" ? "US/UK market: omit photo, DOB, and marital status." : "Market settings may require more personal detail; keep ATS exports text-first."}</p>
+          </section>
+        </div>
+
+        {editorStatus ? <div className="resume-editor-status">{editorStatus}</div> : null}
 
         <div className="resume-editor-layout">
           <section className="resume-editor-panel">
@@ -1590,16 +1727,35 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
                   ["phone", "Phone"],
                   ["location", "Location"],
                   ["links", "LinkedIn / GitHub / Portfolio"],
+                  ["targetIndustry", "Target industry"],
+                  ["yearsExperience", "Years of experience"],
                 ].map(([field, label]) => (
                   <label key={field}>
                     {label}
                     <input value={draft.basics[field]} onChange={(event) => updateBasics(field, event.target.value)} />
                   </label>
                 ))}
-                <label className="wide">
-                  Professional summary
-                  <textarea rows={5} value={draft.basics.summary} onChange={(event) => updateBasics("summary", event.target.value)} />
+                <label>
+                  Career level
+                  <select value={draft.basics.careerLevel} onChange={(event) => updateBasics("careerLevel", event.target.value)}>
+                    {CAREER_LEVELS.map((level) => <option key={level}>{level}</option>)}
+                  </select>
                 </label>
+                <label>
+                  Market / region
+                  <select value={draft.basics.market} onChange={(event) => updateBasics("market", event.target.value)}>
+                    {MARKETS.map((market) => <option key={market}>{market}</option>)}
+                  </select>
+                </label>
+                <EnhancedTextarea
+                  className="wide"
+                  label="Professional summary"
+                  rows={5}
+                  value={draft.basics.summary}
+                  onChange={(value) => updateBasics("summary", value)}
+                  onEnhance={() => improveText("basics.summary", "Professional summary", draft.basics.summary, (value) => updateBasics("summary", value))}
+                  loading={enhancingField === "basics.summary"}
+                />
               </div>
             ) : null}
 
@@ -1611,6 +1767,8 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
                 onAdd={addListItem}
                 onRemove={removeListItem}
                 onUpdate={updateList}
+                onEnhance={improveText}
+                enhancingField={enhancingField}
               />
             ) : null}
 
@@ -1622,15 +1780,22 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
                 onAdd={addListItem}
                 onRemove={removeListItem}
                 onUpdate={updateList}
+                onEnhance={improveText}
+                enhancingField={enhancingField}
               />
             ) : null}
 
             {activeTab === "skills" ? (
               <div className="editor-form-grid">
-                <label className="wide">
-                  Skills and keywords
-                  <textarea rows={7} value={draft.skills} onChange={(event) => setDraft((current) => ({ ...current, skills: event.target.value }))} />
-                </label>
+                <EnhancedTextarea
+                  className="wide"
+                  label="Skills and keywords"
+                  rows={7}
+                  value={draft.skills}
+                  onChange={(value) => setDraft((current) => ({ ...current, skills: value }))}
+                  onEnhance={() => improveText("skills", "Skills and keywords", draft.skills, (value) => setDraft((current) => ({ ...current, skills: value })))}
+                  loading={enhancingField === "skills"}
+                />
                 <div className="editor-signal-box wide">
                   <strong>Signals to consider</strong>
                   <div>
@@ -1648,19 +1813,31 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
                 onAdd={addListItem}
                 onRemove={removeListItem}
                 onUpdate={updateList}
+                onEnhance={improveText}
+                enhancingField={enhancingField}
               />
             ) : null}
 
             {activeTab === "extras" ? (
               <div className="editor-form-grid">
-                <label className="wide">
-                  Certifications
-                  <textarea rows={3} value={draft.extras.certifications} onChange={(event) => updateExtras("certifications", event.target.value)} />
-                </label>
-                <label className="wide">
-                  Achievements / awards
-                  <textarea rows={3} value={draft.extras.achievements} onChange={(event) => updateExtras("achievements", event.target.value)} />
-                </label>
+                <EnhancedTextarea
+                  className="wide"
+                  label="Certifications"
+                  rows={3}
+                  value={draft.extras.certifications}
+                  onChange={(value) => updateExtras("certifications", value)}
+                  onEnhance={() => improveText("extras.certifications", "Certifications", draft.extras.certifications, (value) => updateExtras("certifications", value))}
+                  loading={enhancingField === "extras.certifications"}
+                />
+                <EnhancedTextarea
+                  className="wide"
+                  label="Achievements / awards"
+                  rows={3}
+                  value={draft.extras.achievements}
+                  onChange={(value) => updateExtras("achievements", value)}
+                  onEnhance={() => improveText("extras.achievements", "Achievements / awards", draft.extras.achievements, (value) => updateExtras("achievements", value))}
+                  loading={enhancingField === "extras.achievements"}
+                />
                 <label className="wide">
                   Target keywords from job description
                   <textarea rows={3} value={draft.extras.keywords} onChange={(event) => updateExtras("keywords", event.target.value)} />
@@ -1682,7 +1859,21 @@ function ResumeEditorPage({ analysis, selectedRole, jobDescription }) {
   );
 }
 
-function EditorList({ items, section, fields, onAdd, onRemove, onUpdate }) {
+function EnhancedTextarea({ className = "", label, rows, value, onChange, onEnhance, loading }) {
+  return (
+    <label className={`enhance-field ${className}`}>
+      <span>
+        {label}
+        <button type="button" onClick={onEnhance} disabled={loading}>
+          <Sparkles size={15} /> {loading ? "Generating" : "Generate better text"}
+        </button>
+      </span>
+      <textarea rows={rows} value={value} onChange={(event) => onChange(event.target.value)} />
+    </label>
+  );
+}
+
+function EditorList({ items, section, fields, onAdd, onRemove, onUpdate, onEnhance, enhancingField }) {
   const addLabel = section === "experience" ? "experience" : section.replace(/s$/, "");
   return (
     <div className="editor-list">
@@ -1697,11 +1888,31 @@ function EditorList({ items, section, fields, onAdd, onRemove, onUpdate }) {
           <div className="editor-form-grid">
             {fields.map(([field, label]) => (
               <label className={field === "bullets" || field === "detail" ? "wide" : ""} key={field}>
-                {label}
                 {field === "bullets" || field === "detail" ? (
-                  <textarea rows={field === "bullets" ? 5 : 3} value={item[field]} onChange={(event) => onUpdate(section, index, field, event.target.value)} />
+                  <>
+                    <span>
+                      {label}
+                      <button
+                        type="button"
+                        className="inline-generate-button"
+                        disabled={enhancingField === `${section}.${index}.${field}`}
+                        onClick={() => onEnhance(
+                          `${section}.${index}.${field}`,
+                          label,
+                          item[field],
+                          (value) => onUpdate(section, index, field, value),
+                        )}
+                      >
+                        <Sparkles size={15} /> {enhancingField === `${section}.${index}.${field}` ? "Generating" : "Generate"}
+                      </button>
+                    </span>
+                    <textarea rows={field === "bullets" ? 5 : 3} value={item[field]} onChange={(event) => onUpdate(section, index, field, event.target.value)} />
+                  </>
                 ) : (
-                  <input value={item[field]} onChange={(event) => onUpdate(section, index, field, event.target.value)} />
+                  <>
+                    {label}
+                    <input value={item[field]} onChange={(event) => onUpdate(section, index, field, event.target.value)} />
+                  </>
                 )}
               </label>
             ))}
@@ -1841,6 +2052,7 @@ function ChatbotPage({
   onPrepareChat,
   onChatInputChange,
   onSendChat,
+  onClearChat,
 }) {
   const resumeText = analysis?.resume_text || analysis?.resume_preview || "";
   const hasResumeContext = Boolean(resumeText.trim());
@@ -1870,7 +2082,7 @@ function ChatbotPage({
           <h1>Ask sharper questions about your resume.</h1>
           <p>
             Upload a resume once, choose the target role, then ask Groq for specific changes,
-            missing skills, project ideas, and interview talking points.
+            missing resume keywords, section rewrites, and ATS-focused improvements.
           </p>
 
           <form className="chat-upload-panel" onSubmit={onPrepareChat}>
@@ -1908,9 +2120,19 @@ function ChatbotPage({
           <div className="chat-panel-head">
             <span><Bot size={22} /></span>
             <div>
-              <h2>Career assistant</h2>
+              <h2>Resume assistant</h2>
               <p>{hasResumeContext ? `${analysis?.resume_file_name || "Resume"} is ready for questions.` : "Upload a resume to unlock chat."}</p>
             </div>
+            <button
+              className="chat-clear-button"
+              type="button"
+              onClick={onClearChat}
+              disabled={!chatMessages.length || chatLoading}
+              aria-label="Clear previous chat"
+              title="Clear previous chat"
+            >
+              <Trash2 size={18} />
+            </button>
           </div>
 
           <div className="chat-thread">
@@ -2121,6 +2343,12 @@ function App() {
     }
   }
 
+  function clearChatMessages() {
+    saveChatMessages([]);
+    setChatInput("");
+    setMessage("");
+  }
+
   if (route === "#resources") {
     return <ResourcesPage analysis={analysis} />;
   }
@@ -2180,6 +2408,7 @@ function App() {
         onPrepareChat={prepareChat}
         onChatInputChange={setChatInput}
         onSendChat={sendChatMessage}
+        onClearChat={clearChatMessages}
       />
     );
   }

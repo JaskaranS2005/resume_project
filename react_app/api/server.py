@@ -2,12 +2,14 @@ import os
 import sys
 import json
 import tempfile
+from io import BytesIO
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
-from typing import List, Dict
+from typing import Any, List, Dict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
@@ -25,7 +27,11 @@ load_dotenv(PROJECT_ROOT / "react_app" / ".env")
 from model.model import compute_final_score, compute_score_breakdown
 from preprocessing.preprocessing_pipeline import build_feature_vector
 from utils.file_extractor import extract_docx_text, extract_image_text, extract_pdf_text
-from utils.llm_helper import _make_groq_client, generate_feedback, chat_with_groq
+from utils.llm_helper import (
+    _make_groq_client,
+    chat_with_groq,
+    generate_feedback,
+)
 
 JOB_OPTIONS = {
     "Frontend Developer": "Looking for a frontend developer with React, JavaScript, Redux, and API integration experience",
@@ -188,6 +194,23 @@ class ResourceRequest(BaseModel):
     role_template: str | None = None
 
 
+class EnhanceTextRequest(BaseModel):
+    text: str
+    field: str = "resume text"
+    context: dict[str, Any] = {}
+
+    class Config:
+        extra = "forbid"
+
+
+class ResumeExportRequest(BaseModel):
+    draft: dict[str, Any]
+    format: str = "docx"
+
+    class Config:
+        extra = "forbid"
+
+
 def call_groq(resource_id, payload):
     tool = RESOURCE_TOOLS.get(resource_id)
     if not tool:
@@ -303,6 +326,286 @@ def roles():
 @app.post("/api/resources/{resource_id}")
 def generate_resource(resource_id: str, payload: ResourceRequest):
     return call_groq(resource_id, payload)
+
+
+def improve_resume_text_locally(text, field):
+    raw_lines = [line.strip(" -•\t") for line in str(text or "").splitlines() if line.strip()]
+    if not raw_lines:
+        return ""
+
+    weak_starts = ("responsible for", "worked on", "helped with", "involved in", "handled")
+    action_verbs = ["Built", "Led", "Improved", "Delivered", "Optimized", "Created", "Reduced", "Increased"]
+    improved = []
+
+    for index, line in enumerate(raw_lines):
+        clean = " ".join(line.split()).rstrip(".")
+        lowered = clean.lower()
+        for weak in weak_starts:
+            if lowered.startswith(weak):
+                clean = clean[len(weak):].strip(" :-")
+                break
+
+        starts_with_action = clean.split(" ", 1)[0] in action_verbs
+        if "summary" in field.lower():
+            improved.append(clean)
+            continue
+
+        if not starts_with_action:
+            clean = f"{action_verbs[index % len(action_verbs)]} {clean[:1].lower()}{clean[1:]}"
+        if not any(char.isdigit() for char in clean):
+            clean = f"{clean}, improving delivery quality and role alignment"
+        improved.append(clean + ".")
+
+    if "summary" in field.lower():
+        return " ".join(improved)[:520]
+    return "\n".join(improved)
+
+
+@app.post("/api/resume/enhance-text")
+def enhance_resume_text(payload: EnhanceTextRequest):
+    text = (payload.text or "").strip()
+    if not text:
+        raise HTTPException(status_code=400, detail="Add text before generating an improved version.")
+
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    if not api_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY is required for resume text generation.")
+
+    try:
+        import groq
+        client = _make_groq_client(groq, api_key)
+        context = payload.context or {}
+        prompt = f"""
+Rewrite this resume field so it is concise, ATS-friendly, and achievement-focused.
+
+Field: {payload.field}
+Target role: {context.get("target_role", "")}
+Target industry: {context.get("target_industry", "")}
+Career level: {context.get("career_level", "")}
+Market/region: {context.get("market", "")}
+Job description keywords: {context.get("keywords", "")}
+
+Rules:
+- Preserve truthful meaning. Do not invent employers, dates, degrees, certifications, or fake metrics.
+- Use standard resume language, no personal pronouns.
+- For bullets, start each line with a strong action verb and follow Context, Action, Result where possible.
+- Quantify only when the source text already includes numbers; otherwise use measurable wording without fake numbers.
+- Keep summaries to 3-4 short lines max.
+- Use past tense for completed work and present tense only for current work.
+- Return only the rewritten text, no markdown fence.
+
+Original text:
+{text}
+""".strip()
+        response = client.chat.completions.create(
+            messages=[
+                {"role": "system", "content": "You rewrite resume text into concise ATS-friendly content."},
+                {"role": "user", "content": prompt},
+            ],
+            model=os.getenv("GROQ_MODEL", "meta-llama/llama-4-scout-17b-16e-instruct"),
+            temperature=0.25,
+            max_completion_tokens=int(os.getenv("GROQ_MAX_COMPLETION_TOKENS", "700")),
+        )
+        return {"text": (response.choices[0].message.content or "").strip(), "source": "groq"}
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"Groq API request failed. {str(error)}") from error
+
+
+def bullet_lines(text):
+    return [line.strip(" -•\t") for line in str(text or "").splitlines() if line.strip()]
+
+
+def get_draft_section_order(draft):
+    level = str(((draft.get("basics") or {}).get("careerLevel") or "")).lower()
+    if "fresher" in level or "intern" in level or "entry" in level:
+        return ["summary", "education", "skills", "projects", "experience", "extras"]
+    if "changer" in level:
+        return ["summary", "skills", "experience", "projects", "education", "extras"]
+    if "executive" in level or "senior" in level:
+        return ["summary", "skills", "experience", "projects", "education", "extras"]
+    return ["summary", "experience", "skills", "projects", "education", "extras"]
+
+
+def build_resume_plain_text_server(draft):
+    basics = draft.get("basics") or {}
+    contact = " | ".join(
+        str(basics.get(key) or "").strip()
+        for key in ["email", "phone", "location", "links"]
+        if str(basics.get(key) or "").strip()
+    )
+    lines = [basics.get("name") or "Candidate Name", basics.get("title") or "", contact, ""]
+
+    def add_summary():
+        lines.extend(["Professional Summary", basics.get("summary") or "", ""])
+
+    def add_skills():
+        lines.extend(["Skills", draft.get("skills") or "", ""])
+
+    def add_experience():
+        lines.append("Experience")
+        for item in draft.get("experience") or []:
+            lines.extend([f"{item.get('role', '')} - {item.get('company', '')}".strip(" -"), item.get("period") or ""])
+            lines.extend(f"- {line}" for line in bullet_lines(item.get("bullets")))
+            lines.append("")
+
+    def add_projects():
+        lines.append("Projects")
+        for item in draft.get("projects") or []:
+            lines.extend([item.get("name") or "", item.get("stack") or ""])
+            lines.extend(f"- {line}" for line in bullet_lines(item.get("bullets")))
+            lines.append("")
+
+    def add_education():
+        lines.append("Education")
+        for item in draft.get("education") or []:
+            lines.extend([f"{item.get('degree', '')} - {item.get('school', '')}".strip(" -"), item.get("period") or "", item.get("detail") or "", ""])
+
+    def add_extras():
+        extras = draft.get("extras") or {}
+        if extras.get("certifications"):
+            lines.extend(["Certifications", extras.get("certifications"), ""])
+        if extras.get("achievements"):
+            lines.extend(["Achievements", extras.get("achievements"), ""])
+
+    renderers = {
+        "summary": add_summary,
+        "skills": add_skills,
+        "experience": add_experience,
+        "projects": add_projects,
+        "education": add_education,
+        "extras": add_extras,
+    }
+    for section in get_draft_section_order(draft):
+        renderers[section]()
+    return "\n".join(str(line).strip() for line in lines).replace("\n\n\n", "\n\n").strip()
+
+
+def build_resume_docx(draft):
+    try:
+        from docx import Document
+        from docx.shared import Pt
+    except ImportError as error:
+        raise HTTPException(status_code=500, detail="python-docx is not installed.") from error
+
+    basics = draft.get("basics") or {}
+    document = Document()
+    styles = document.styles
+    styles["Normal"].font.name = "Calibri"
+    styles["Normal"].font.size = Pt(10.5)
+
+    title = document.add_paragraph()
+    title.alignment = 1
+    run = title.add_run(str(basics.get("name") or "Candidate Name"))
+    run.bold = True
+    run.font.size = Pt(18)
+
+    subtitle = document.add_paragraph()
+    subtitle.alignment = 1
+    subtitle.add_run(str(basics.get("title") or ""))
+    contact = " | ".join(str(basics.get(key) or "").strip() for key in ["email", "phone", "location", "links"] if str(basics.get(key) or "").strip())
+    contact_para = document.add_paragraph()
+    contact_para.alignment = 1
+    contact_para.add_run(contact)
+
+    def heading(text):
+        para = document.add_paragraph()
+        run = para.add_run(text)
+        run.bold = True
+        run.font.size = Pt(11.5)
+
+    def bullets(text):
+        for line in bullet_lines(text):
+            document.add_paragraph(line, style="List Bullet")
+
+    def add_summary():
+        heading("Professional Summary")
+        document.add_paragraph(str(basics.get("summary") or ""))
+
+    def add_skills():
+        heading("Skills")
+        document.add_paragraph(str(draft.get("skills") or ""))
+
+    def add_experience():
+        heading("Experience")
+        for item in draft.get("experience") or []:
+            para = document.add_paragraph()
+            para.add_run(f"{item.get('role', '')} - {item.get('company', '')}".strip(" -")).bold = True
+            if item.get("period"):
+                para.add_run(f" | {item.get('period')}")
+            bullets(item.get("bullets"))
+
+    def add_projects():
+        heading("Projects")
+        for item in draft.get("projects") or []:
+            para = document.add_paragraph()
+            para.add_run(str(item.get("name") or "")).bold = True
+            if item.get("stack"):
+                para.add_run(f" | {item.get('stack')}")
+            bullets(item.get("bullets"))
+
+    def add_education():
+        heading("Education")
+        for item in draft.get("education") or []:
+            para = document.add_paragraph()
+            para.add_run(f"{item.get('degree', '')} - {item.get('school', '')}".strip(" -")).bold = True
+            if item.get("period"):
+                para.add_run(f" | {item.get('period')}")
+            if item.get("detail"):
+                document.add_paragraph(str(item.get("detail")))
+
+    def add_extras():
+        extras = draft.get("extras") or {}
+        if extras.get("certifications"):
+            heading("Certifications")
+            document.add_paragraph(str(extras.get("certifications")))
+        if extras.get("achievements"):
+            heading("Achievements")
+            document.add_paragraph(str(extras.get("achievements")))
+
+    renderers = {
+        "summary": add_summary,
+        "skills": add_skills,
+        "experience": add_experience,
+        "projects": add_projects,
+        "education": add_education,
+        "extras": add_extras,
+    }
+    for section in get_draft_section_order(draft):
+        renderers[section]()
+
+    output = BytesIO()
+    document.save(output)
+    output.seek(0)
+    return output
+
+
+@app.post("/api/resume/export")
+def export_resume(payload: ResumeExportRequest):
+    fmt = (payload.format or "docx").lower()
+    draft = payload.draft or {}
+    name = str(((draft.get("basics") or {}).get("name") or "resume")).lower()
+    safe_name = "".join(char if char.isalnum() else "-" for char in name).strip("-") or "resume"
+
+    if fmt == "docx":
+        output = build_resume_docx(draft)
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{safe_name}-resume.docx"'},
+        )
+    if fmt == "txt":
+        return Response(
+            build_resume_plain_text_server(draft),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{safe_name}-resume.txt"'},
+        )
+    if fmt == "json":
+        return Response(
+            json.dumps(draft, indent=2),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{safe_name}-resume.json"'},
+        )
+    raise HTTPException(status_code=400, detail="Supported export formats are docx, txt, and json.")
 
 
 @app.post("/api/analyze")
