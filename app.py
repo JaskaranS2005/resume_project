@@ -28,7 +28,7 @@ def sync_jd_from_role():
 def get_match_status(score):
     if score >= 75:
         return "Strong match", "status-strong"
-    if score >= 55:
+    if score >= 50:
         return "Moderate match", "status-moderate"
     return "Weak match", "status-weak"
 
@@ -1059,8 +1059,8 @@ with upload_col:
     )
     uploaded_file = st.file_uploader(
         "Resume file",
-        type=["pdf", "docx", "png", "jpg", "jpeg"],
-        help="Supported formats: PDF, DOCX, PNG, JPG, JPEG",
+        type=["pdf", "docx", "png", "jpg", "jpeg", "webp"],
+        help="Supported formats: PDF, DOCX, PNG, JPG, JPEG, WEBP",
     )
     submitted = st.button("Run analysis", use_container_width=True)
 
@@ -1073,7 +1073,7 @@ if submitted:
     else:
         with st.spinner("Analyzing resume against job description..."):
             ext = os.path.splitext(uploaded_file.name)[1].lower()
-            suffix = ext if ext in {".pdf", ".docx", ".png", ".jpg", ".jpeg"} else ".pdf"
+            suffix = ext if ext in {".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp"} else ".pdf"
 
             temp_path = None
             try:

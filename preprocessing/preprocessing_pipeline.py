@@ -282,11 +282,16 @@ def step6_clean_punctuation_and_whitespace(text: str) -> str:
 # Condensed version of the 153-entry map from dataset v1
 SKILL_NORM_MAP = {
     "react.js": "react",    "reactjs": "react",
+    "react router": "react router",
     "vue.js": "vue",        "vuejs": "vue",
     "angular.js": "angular","angularjs": "angular",
     "javascript": "javascript", "es6": "javascript", "ecmascript": "javascript",
+    "html5": "html", "htmls": "html",
     "node.js": "nodejs",    "node": "nodejs",
+    "node js": "nodejs",
     "express.js": "expressjs", "express": "expressjs",
+    "fast api": "fastapi", "fast-api": "fastapi",
+    "spring boot": "springboot",
     "mern": "react nodejs mongodb expressjs",
     "mean": "angular nodejs mongodb expressjs",
     "scikit-learn": "sklearn", "scikit learn": "sklearn",
@@ -295,10 +300,14 @@ SKILL_NORM_MAP = {
     "hugging face": "huggingface", "transformers": "huggingface",
     "postgres": "postgresql","pg": "postgresql",
     "mongo": "mongodb",     "mongo db": "mongodb",
+    "sqlite3": "sqlite",
     "k8s": "kubernetes",
     "amazon web services": "aws",
     "google cloud platform": "gcp",
+    "github actions": "github actions",
+    "gitlab ci": "gitlab ci",
     "ci/cd": "cicd",        "continuous integration": "cicd",
+    "continuous deployment": "cicd",
     "infrastructure as code": "iac", "terraform": "terraform",
     "extract transform load": "etl",
     "apache spark": "spark","pyspark": "spark",
@@ -308,29 +317,52 @@ SKILL_NORM_MAP = {
 
 SKILL_ALIASES = {
     "react": {"react", "reactjs", "frontend components", "component based"},
+    "frontend": {"frontend", "front end", "front-end", "client side", "user interface", "ui"},
+    "backend": {"backend", "back end", "back-end", "server side", "server-side"},
+    "full stack": {"full stack", "full-stack", "end-to-end", "mern", "mean"},
     "javascript": {"javascript", "js", "es6", "ecmascript"},
     "typescript": {"typescript", "ts"},
-    "html": {"html", "semantic html"},
-    "css": {"css", "scss", "sass", "tailwind", "responsive design", "responsive ui"},
+    "html": {"html", "html5", "htmls", "semantic html"},
+    "css": {"css", "scss", "sass", "tailwind", "bootstrap", "chakra ui", "responsive design", "responsive ui", "web design"},
+    "responsive ui": {"responsive ui", "responsive design", "responsive", "mobile registrations", "all devices"},
+    "forms": {"forms", "form validation", "registration system", "validation"},
+    "performance optimization": {"performance optimization", "optimized", "load time", "response time", "latency", "code quality"},
     "redux": {"redux", "state management", "zustand", "context api"},
+    "react router": {"react router", "routing"},
     "nodejs": {"nodejs", "node", "node.js"},
+    "nestjs": {"nestjs", "nest js"},
     "expressjs": {"expressjs", "express", "express.js"},
+    "flask": {"flask"},
+    "fastapi": {"fastapi", "fast api"},
+    "django": {"django"},
     "python": {"python", "py"},
     "java": {"java", "springboot", "spring boot"},
-    "sql": {"sql", "mysql", "postgresql", "postgres", "database queries"},
+    "sql": {"sql", "mysql", "postgresql", "postgres", "sqlite", "database queries"},
     "mongodb": {"mongodb", "mongo", "nosql"},
-    "rest api": {"rest api", "rest", "api integration", "apis", "http api"},
-    "graphql": {"graphql", "graph ql"},
+    "database": {"database", "databases", "data store", "data stores", "schema", "schemas", "data modeling", "crud", "redis", "firebase"},
+    "rest api": {"rest api", "rest", "api development", "api design", "api integration", "api integrations", "apis", "http api", "endpoints", "routes", "routing", "json", "postman", "software integrations", "third-party integrations"},
+    "graphql": {"graphql", "graph ql", "apollo client"},
     "authentication": {"authentication", "authorization", "auth", "jwt", "oauth", "session"},
-    "testing": {"testing", "unit testing", "integration testing", "jest", "pytest", "selenium", "playwright", "cypress"},
+    "testing": {"testing", "unit testing", "integration testing", "manual testing", "regression testing", "api testing", "jest", "pytest", "selenium", "playwright", "cypress", "enzyme", "test suites", "test cases", "test plans", "test scenarios", "eslint"},
+    "bug reporting": {"bug report", "bug reports", "defect", "defects", "expected result", "actual result"},
     "git": {"git", "github", "version control", "pull request", "branching"},
     "docker": {"docker", "container", "containerization"},
     "kubernetes": {"kubernetes", "k8s"},
+    "cloud": {"cloud", "deployment", "deployments", "deployed", "render", "railway", "vercel", "netlify"},
     "aws": {"aws", "amazon web services", "ec2", "s3", "rds", "lambda"},
+    "azure": {"azure"},
     "gcp": {"gcp", "google cloud platform", "cloud run"},
-    "ci cd": {"ci cd", "cicd", "github actions", "continuous integration", "continuous deployment"},
-    "machine learning": {"machine learning", "ml", "model training", "model evaluation"},
-    "data analysis": {"data analysis", "eda", "exploratory analysis", "analytics", "dashboard"},
+    "linux": {"linux", "shell", "bash", "command line", "unix"},
+    "ci cd": {"ci cd", "cicd", "github actions", "gitlab ci", "jenkins", "continuous integration", "continuous deployment", "ci workflows"},
+    "monitoring": {"monitoring", "logs", "logging", "observability", "reliability"},
+    "machine learning": {"machine learning", "ml", "model training", "model evaluation", "classification", "regression", "clustering", "random forest", "decision trees", "linear regression", "logistic regression"},
+    "data analysis": {"data analysis", "eda", "exploratory analysis", "analytics", "dashboard", "dashboards", "insights", "business recommendations"},
+    "data cleaning": {"data cleaning", "preprocessing", "data preprocessing", "clean data", "messy data"},
+    "feature engineering": {"feature engineering", "features"},
+    "model evaluation": {"model evaluation", "metrics", "accuracy", "precision", "recall", "f1", "roc-auc", "rmse", "mae", "train/test split", "train test split"},
+    "visualization": {"visualization", "visualizations", "charts", "matplotlib", "seaborn", "plotly"},
+    "jupyter": {"jupyter", "notebook", "notebooks", "kaggle", "colab"},
+    "model serving": {"model serving", "streamlit", "ml app", "deployed ml", "model api"},
     "pandas": {"pandas"},
     "numpy": {"numpy"},
     "sklearn": {"sklearn", "scikit-learn", "scikit learn"},
@@ -338,7 +370,12 @@ SKILL_ALIASES = {
     "pytorch": {"pytorch", "torch"},
     "power bi": {"power bi", "powerbi"},
     "tableau": {"tableau"},
-    "figma": {"figma", "wireframe", "prototype", "design system"},
+    "figma": {"figma"},
+    "wireframes": {"wireframe", "wireframes"},
+    "prototype": {"prototype", "prototypes", "mockup", "mockups"},
+    "user flows": {"user flow", "user flows", "flow diagrams"},
+    "design system": {"design system", "design systems", "handoff", "components"},
+    "usability": {"usability", "user research", "visual hierarchy", "accessibility"},
 }
 
 RESUME_SECTION_TERMS = {
@@ -366,12 +403,45 @@ def extract_skills(text: str) -> list[str]:
     for canonical, aliases in SKILL_ALIASES.items():
         if any(re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", padded) for alias in aliases):
             found.append(canonical)
-    return sorted(set(found))
+    return sorted(_infer_related_skills(set(found)))
+
+
+def _infer_related_skills(skills: set[str]) -> set[str]:
+    inferred = set(skills)
+    if {"react", "redux", "react router"} & inferred:
+        inferred.update({"frontend", "javascript"})
+    if {"html", "css", "responsive ui", "forms"} & inferred:
+        inferred.add("frontend")
+    if {"nodejs", "expressjs", "nestjs"} & inferred:
+        inferred.update({"backend", "javascript"})
+    if {"flask", "fastapi", "django"} & inferred:
+        inferred.update({"backend", "python"})
+    if {"mongodb", "database", "authentication"} & inferred:
+        inferred.add("backend")
+    if {"frontend", "backend"} <= inferred:
+        inferred.add("full stack")
+    if "testing" in inferred and {"react", "frontend"} & inferred:
+        inferred.add("javascript")
+    if "css" in inferred and "html" in inferred:
+        inferred.add("responsive ui")
+    if {"pandas", "numpy", "jupyter", "data cleaning", "visualization"} & inferred:
+        inferred.update({"python", "data analysis"})
+    if {"sklearn", "tensorflow", "pytorch", "model evaluation", "feature engineering"} & inferred:
+        inferred.add("machine learning")
+    if {"docker", "kubernetes", "ci cd", "linux", "monitoring"} & inferred:
+        inferred.add("devops")
+    if {"wireframes", "prototype", "user flows", "design system", "usability"} & inferred:
+        inferred.add("figma")
+    return inferred
 
 
 def extract_role_keywords(clean_text: str) -> list[str]:
     tokens = [token for token in clean_text.split() if len(token) > 2 and not token.isdigit()]
-    ignored = STOPWORDS | {"developer", "engineer", "intern", "candidate", "experience", "skills", "responsibilities"}
+    ignored = STOPWORDS | {
+        "developer", "engineer", "intern", "candidate", "experience", "skills",
+        "responsibilities", "requiring", "requires", "requirement", "requirements",
+        "role", "looking",
+    }
     keywords = []
     for token in tokens:
         if token not in ignored and token not in keywords:
@@ -545,6 +615,110 @@ def step9_extract_depth_signals(original_text: str) -> dict:
         "signals_found": found,
     }
 
+
+def _score_depth_context(text: str) -> tuple[float, list[str]]:
+    found = []
+    scores = []
+    text_lower = text.lower()
+
+    for label, score, patterns in DEPTH_SIGNAL_RULES:
+        if any(re.search(pattern, text_lower) for pattern in patterns):
+            found.append(label)
+            scores.append(score)
+
+    if not scores:
+        return 2.0, []
+    return round(sum(scores) / len(scores), 2), found
+
+
+def _normalise_for_skill_context(text: str) -> str:
+    normalised = step1_lowercase_and_normalise(text or "")
+    normalised = step2_delimiters_to_spaces(normalised)
+    normalised = step3_expand_informal(normalised)
+    normalised = step4_expand_tech_abbreviations(normalised)
+    normalised = step5_fix_broken_words(normalised)
+    normalised = step6_clean_punctuation_and_whitespace(normalised)
+    return step7_normalise_skills(normalised)
+
+
+def _skill_contexts(text: str, skill: str, window: int = 12) -> list[str]:
+    tokens = _normalise_for_skill_context(text).split()
+    skill_tokens = skill.split()
+    if not tokens or not skill_tokens:
+        return []
+
+    contexts = []
+    skill_len = len(skill_tokens)
+    for idx in range(0, len(tokens) - skill_len + 1):
+        if tokens[idx:idx + skill_len] == skill_tokens:
+            start = max(0, idx - window)
+            end = min(len(tokens), idx + skill_len + window)
+            contexts.append(" ".join(tokens[start:end]))
+    return contexts
+
+
+def score_skill_depths(text: str, skills: list[str], present_skills: list[str] | None = None) -> dict[str, dict]:
+    """
+    Estimate proficiency depth per detected skill from nearby wording.
+    Missing skills score 0; present skills with no explicit qualifier default to 2.
+    """
+    skill_depths = {}
+    present = set(present_skills or skills)
+    for skill in skills:
+        contexts = _skill_contexts(text, skill)
+        if not contexts:
+            if skill in present:
+                skill_depths[skill] = {"depth_score": 1.5, "signals_found": ["inferred related skill"], "present": True}
+                continue
+            skill_depths[skill] = {"depth_score": 0.0, "signals_found": [], "present": False}
+            continue
+
+        scores = []
+        signals = []
+        for context in contexts:
+            score, found = _score_depth_context(context)
+            scores.append(score)
+            signals.extend(found)
+
+        skill_depths[skill] = {
+            "depth_score": round(sum(scores) / len(scores), 2),
+            "signals_found": sorted(set(signals)),
+            "present": True,
+        }
+    return skill_depths
+
+
+def compute_skill_depth_gap(
+    resume: str,
+    job_desc: str,
+    jd_skills: list[str],
+    resume_skills: list[str] | None = None,
+) -> tuple[float, dict]:
+    if not jd_skills:
+        resume_meta = step9_extract_depth_signals(resume)
+        jd_meta = step9_extract_depth_signals(job_desc)
+        gap = round(abs(resume_meta["depth_score"] - jd_meta["depth_score"]), 2)
+        return gap, {}
+
+    resume_depths = score_skill_depths(resume, jd_skills, resume_skills)
+    jd_depths = score_skill_depths(job_desc, jd_skills, jd_skills)
+    gaps = {}
+
+    for skill in jd_skills:
+        resume_score = resume_depths[skill]["depth_score"]
+        jd_score = jd_depths[skill]["depth_score"] or 2.0
+        gaps[skill] = {
+            "resume_depth": resume_score,
+            "jd_depth": jd_score,
+            "gap": round(abs(resume_score - jd_score), 2),
+            "resume_signals": resume_depths[skill]["signals_found"],
+            "jd_signals": jd_depths[skill]["signals_found"],
+            "present_in_resume": resume_depths[skill]["present"],
+        }
+
+    depth_gap = round(sum(item["gap"] for item in gaps.values()) / len(gaps), 2)
+    return depth_gap, gaps
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 10 — FULL PIPELINE ORCHESTRATOR
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -596,13 +770,15 @@ def build_feature_vector(resume: str, job_desc: str) -> dict:
     jd_keywords = extract_role_keywords(clean_jd)
     matched_keywords = sorted(set(resume_keywords) & set(jd_keywords))
     resume_quality = compute_resume_quality(resume)
+    depth_gap, skill_depth_gaps = compute_skill_depth_gap(resume, job_desc, jd_skills, resume_skills)
 
     return {
         "clean_resume":    clean_resume,
         "clean_jd":        clean_jd,
         "resume_depth":    r_meta["depth_score"],
         "jd_depth":        j_meta["depth_score"],
-        "depth_gap":       round(abs(r_meta["depth_score"] - j_meta["depth_score"]), 2),
+        "depth_gap":       depth_gap,
+        "skill_depth_gaps": skill_depth_gaps,
         "resume_signals":  r_meta["signals_found"],
         "jd_signals":      j_meta["signals_found"],
         "resume_skills":   resume_skills,

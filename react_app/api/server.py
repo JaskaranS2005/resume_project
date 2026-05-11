@@ -41,7 +41,7 @@ JOB_OPTIONS = {
     "Custom": "",
 }
 
-SUPPORTED_SUFFIXES = {".pdf", ".docx", ".png", ".jpg", ".jpeg"}
+SUPPORTED_SUFFIXES = {".pdf", ".docx", ".png", ".jpg", ".jpeg", ".webp"}
 RESUME_HINTS = {
     "resume",
     "curriculum vitae",
@@ -109,7 +109,7 @@ app.add_middleware(
 def get_match_status(score):
     if score >= 75:
         return "Strong match"
-    if score >= 55:
+    if score >= 50:
         return "Moderate match"
     return "Weak match"
 

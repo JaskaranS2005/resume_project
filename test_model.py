@@ -71,3 +71,52 @@ def test_unrelated_resume_stays_low():
     score, _, _ = compute_final_score(fv)
 
     assert score < 55
+
+
+def test_backend_resume_is_not_marked_weak_for_backend_jd():
+    resume = """
+    Backend developer with Node.js, Express, MongoDB, PostgreSQL, JWT authentication,
+    REST API routes, validation middleware, Git, Postman testing, Docker deployment,
+    and logging. Built CRUD services and optimized database queries.
+    """
+    jd = """
+    Backend Developer requiring Node.js, Express, REST APIs, authentication, SQL or
+    NoSQL databases, validation, testing, deployment workflows, and API documentation.
+    """
+    fv = build_feature_vector(resume, jd)
+    score, _, _ = compute_final_score(fv)
+
+    assert score >= 50
+
+
+def test_data_resume_is_not_marked_weak_for_data_jd():
+    resume = """
+    Data scientist using Python, Pandas, NumPy, SQL, Jupyter notebooks, data cleaning,
+    EDA, feature engineering, scikit-learn model training, model evaluation metrics,
+    Matplotlib, Seaborn, Plotly dashboards, and business insight presentations.
+    """
+    jd = """
+    Data Scientist role needing Python, Pandas, NumPy, SQL, exploratory analysis,
+    feature engineering, machine learning with scikit-learn, model evaluation,
+    visualization, and communication of insights.
+    """
+    fv = build_feature_vector(resume, jd)
+    score, _, _ = compute_final_score(fv)
+
+    assert score >= 50
+
+
+def test_full_stack_resume_is_not_marked_weak_for_full_stack_jd():
+    resume = """
+    Full-stack MERN developer building React forms and responsive UI, Node.js and
+    Express REST APIs, MongoDB database CRUD, JWT login, GitHub workflows, testing,
+    deployment, and end-to-end dashboard features.
+    """
+    jd = """
+    Full Stack Developer requiring React, JavaScript, Node.js, Express, REST APIs,
+    MongoDB or SQL databases, authentication, forms, routing, Git, testing, and deployment.
+    """
+    fv = build_feature_vector(resume, jd)
+    score, _, _ = compute_final_score(fv)
+
+    assert score >= 50

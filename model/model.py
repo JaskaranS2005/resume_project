@@ -78,10 +78,67 @@ def _keyword_coverage(fv: dict) -> float:
     return len(set(fv.get("matched_keywords") or []) & jd_keywords) / len(jd_keywords)
 
 
+ROLE_SKILL_GROUPS = {
+    "frontend": {
+        "frontend", "react", "javascript", "typescript", "html", "css", "responsive ui",
+        "redux", "react router", "forms", "performance optimization", "testing",
+        "rest api", "graphql",
+    },
+    "backend": {
+        "backend", "nodejs", "expressjs", "nestjs", "flask", "fastapi", "django",
+        "java", "python", "sql", "mongodb", "database", "rest api", "graphql",
+        "authentication", "testing", "docker", "ci cd", "aws",
+    },
+    "data": {
+        "python", "sql", "machine learning", "data analysis", "pandas", "numpy",
+        "sklearn", "tensorflow", "pytorch", "data cleaning", "feature engineering",
+        "model evaluation", "visualization", "jupyter", "power bi", "tableau",
+    },
+    "qa": {
+        "testing", "bug reporting", "rest api", "javascript", "python", "java",
+    },
+    "devops": {
+        "devops", "linux", "git", "docker", "kubernetes", "ci cd", "cloud",
+        "aws", "azure", "gcp", "monitoring",
+    },
+    "design": {
+        "figma", "wireframes", "prototype", "user flows", "design system", "usability",
+    },
+}
+
+ROLE_ANCHORS = {
+    "frontend": {"frontend", "react", "html", "css", "responsive ui", "redux", "typescript"},
+    "backend": {"backend", "nodejs", "expressjs", "nestjs", "flask", "fastapi", "django", "sql", "mongodb", "database", "authentication"},
+    "data": {"machine learning", "data analysis", "pandas", "numpy", "sklearn", "tensorflow", "pytorch", "jupyter"},
+    "qa": {"testing", "bug reporting"},
+    "devops": {"devops", "linux", "docker", "kubernetes", "ci cd", "cloud", "monitoring"},
+    "design": {"figma", "wireframes", "prototype", "user flows", "design system", "usability"},
+}
+
+
+def _role_alignment(fv: dict) -> float:
+    resume_skills = set(fv.get("resume_skills") or [])
+    jd_skills = set(fv.get("jd_skills") or [])
+    if not resume_skills or not jd_skills:
+        return 0.0
+
+    best = 0.0
+    for role, group in ROLE_SKILL_GROUPS.items():
+        jd_role_skills = jd_skills & group
+        if len(jd_role_skills) < 2 or not (jd_role_skills & ROLE_ANCHORS[role]):
+            continue
+        resume_role_skills = resume_skills & group
+        recall = len(resume_role_skills & jd_role_skills) / len(jd_role_skills)
+        breadth = min(1.0, len(resume_role_skills) / 5)
+        best = max(best, (recall * 0.75) + (breadth * 0.25))
+    return best
+
+
 def compute_score_breakdown(fv: dict) -> dict:
     similarity = compute_similarity(fv.get("clean_resume", ""), fv.get("clean_jd", ""))
     skill_coverage = _coverage(fv.get("matched_skills", []), fv.get("jd_skills", []), fallback=similarity)
     keyword_coverage = _keyword_coverage(fv)
+    role_alignment = _role_alignment(fv)
     quality = fv.get("resume_quality") or {}
     ats_score = float(quality.get("ats_score", 0.0))
     evidence_score = float(quality.get("evidence_score", 0.0))
@@ -89,11 +146,12 @@ def compute_score_breakdown(fv: dict) -> dict:
     depth_penalty = min(0.08, max(0.0, depth_gap) * 0.035)
 
     raw_score = (
-        similarity * 0.30
-        + skill_coverage * 0.34
-        + keyword_coverage * 0.17
-        + evidence_score * 0.10
-        + ats_score * 0.09
+        similarity * 0.28
+        + skill_coverage * 0.36
+        + keyword_coverage * 0.12
+        + evidence_score * 0.11
+        + ats_score * 0.08
+        + role_alignment * 0.08
         - depth_penalty
     )
     if skill_coverage >= 0.85 and keyword_coverage >= 0.65:
@@ -107,6 +165,7 @@ def compute_score_breakdown(fv: dict) -> dict:
         "semantic_similarity": round(similarity, 4),
         "skill_coverage": round(skill_coverage, 4),
         "keyword_coverage": round(keyword_coverage, 4),
+        "role_alignment": round(role_alignment, 4),
         "evidence_score": round(evidence_score, 4),
         "ats_score": round(ats_score, 4),
         "depth_penalty": round(depth_penalty, 4),

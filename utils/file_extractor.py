@@ -1,3 +1,7 @@
+import os
+import subprocess
+import tempfile
+
 # Trigger reload for PyPDF2
 try:
     import PyPDF2
@@ -11,8 +15,10 @@ except ImportError:
 
 try:
     from PIL import Image
+    from PIL import ImageOps
 except ImportError:
     Image = None
+    ImageOps = None
 
 try:
     from docx import Document
@@ -37,15 +43,44 @@ def extract_pdf_text(file_path):
 
 
 def extract_image_text(image_path):
-    if pytesseract is None or Image is None:
+    if Image is None:
         return ""
 
     try:
         img = Image.open(image_path)
-        text = pytesseract.image_to_string(img)
+        img = ImageOps.grayscale(img)
+        img = ImageOps.autocontrast(img)
+
+        if pytesseract is not None:
+            text = pytesseract.image_to_string(img)
+        else:
+            text = _extract_image_text_with_tesseract_cli(img)
         return text.strip()
     except Exception:
         return ""
+
+
+def _extract_image_text_with_tesseract_cli(img):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as tmp:
+        temp_path = tmp.name
+
+    try:
+        img.save(temp_path)
+        completed = subprocess.run(
+            ["tesseract", temp_path, "stdout", "--psm", "6"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+        if completed.returncode != 0:
+            return ""
+        return completed.stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    finally:
+        if os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 
 def extract_docx_text(file_path):

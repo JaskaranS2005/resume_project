@@ -3,3 +3,5 @@ uvicorn
 python-multipart
 groq
 python-docx
+pillow
+pytesseract

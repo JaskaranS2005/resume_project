@@ -29,6 +29,17 @@ def test_depth_gap_is_non_negative():
     assert fv["depth_gap"] >= 0
 
 
+def test_depth_gap_tracks_missing_required_skill_depth():
+    fv = build_feature_vector(
+        "Python developer with basic React exposure.",
+        "Senior Python developer required to deploy production AWS systems.",
+    )
+
+    assert fv["depth_gap"] > 0
+    assert "aws" in fv["skill_depth_gaps"]
+    assert fv["skill_depth_gaps"]["aws"]["present_in_resume"] is False
+
+
 def test_skill_aliases_are_normalized():
     fv = build_feature_vector(
         "Built React.js UI with JS, REST APIs, GitHub, and Jest tests.",
